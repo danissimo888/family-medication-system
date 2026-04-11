@@ -61,7 +61,7 @@
 - [x] Create `src/routes/authRoutes.js` — POST /register, POST /login, GET /me
 
 ### 2.2 Auth Testing
-- [x] Test register endpoint (Postman or Thunder Client)
+- [x] Test register endpoint (Postman)
 - [x] Test login endpoint and verify JWT payload
 - [x] Test GET /me with valid and invalid tokens
 - [x] Test role middleware blocks unauthorized roles
@@ -97,32 +97,32 @@
 ## Phase 4 — Medications, Prescriptions, and Schedules
 
 ### 4.1 Medications (Master Catalog)
-- [ ] Create `src/models/medicationModel.js`
-- [ ] Create `src/controllers/medicationController.js`
-- [ ] Create `src/routes/medicationRoutes.js`
-- [ ] Implement admin CRUD for medications (GET list with search, GET by id, POST, PUT, DELETE soft-delete)
+- [x] Create `src/models/medicationModel.js`
+- [x] Create `src/controllers/medicationController.js`
+- [x] Create `src/routes/medicationRoutes.js`
+- [x] Implement admin CRUD for medications (GET list with search, GET by id, POST, PUT, DELETE soft-delete)
 
 ### 4.2 Prescriptions
-- [ ] Create `src/models/prescriptionModel.js`
-- [ ] Create `src/controllers/prescriptionController.js`
-- [ ] Create `src/routes/prescriptionRoutes.js`
-- [ ] POST prescription: accept array of items, insert into prescriptions + prescription_items
-- [ ] GET patient prescriptions list
-- [ ] GET single prescription with items
-- [ ] PUT update and PUT cancel prescription
+- [x] Create `src/models/prescriptionModel.js`
+- [x] Create `src/controllers/prescriptionController.js`
+- [x] Create `src/routes/prescriptionRoutes.js`
+- [x] POST prescription: accept array of items, insert into prescriptions + prescription_items
+- [x] GET patient prescriptions list
+- [x] GET single prescription with items
+- [x] PUT update and PUT cancel prescription
 
 ### 4.3 Schedule Generation
-- [ ] Create `src/services/scheduleService.js` — generate medication_schedules rows from prescription item frequency, start date, and duration
-- [ ] Create `src/models/scheduleModel.js`
-- [ ] Create `src/controllers/scheduleController.js`
-- [ ] Create `src/routes/scheduleRoutes.js`
-- [ ] After prescription creation, call scheduleService.generate() for each item
-- [ ] GET /api/patients/:pid/schedules?date=YYYY-MM-DD — return daily schedule joined with medication info
+- [x] Create `src/services/scheduleService.js` — generate medication_schedules rows from prescription item frequency, start date, and duration
+- [x] Create `src/models/scheduleModel.js`
+- [x] Create `src/controllers/scheduleController.js`
+- [x] Create `src/routes/scheduleRoutes.js`
+- [x] After prescription creation, call scheduleService.generate() for each item
+- [x] GET /api/patients/:pid/schedules?date=YYYY-MM-DD — return daily schedule joined with medication info
 
 ### 4.4 Testing
-- [ ] Test: create a prescription with two items
-- [ ] Test: verify schedule rows are generated correctly
-- [ ] Test: query daily schedule and verify joined data
+- [x] Test: create a prescription with two items
+- [x] Test: verify schedule rows are generated correctly
+- [x] Test: query daily schedule and verify joined data
 
 ---
 
@@ -359,3 +359,4 @@
 
 ### 12.4 Documentation
 - [ ] Write thesis documentation referencing the PRD, architecture, and test results
+

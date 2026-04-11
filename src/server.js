@@ -53,10 +53,17 @@ app.get('/api/health', async (req, res) => {
 const authRoutes = require('./routes/authRoutes');
 const familyRoutes = require('./routes/familyRoutes');
 const patientRoutes = require('./routes/patientRoutes');
+const medicationRoutes = require('./routes/medicationRoutes');
+const prescriptionRoutes = require('./routes/prescriptionRoutes');
+const scheduleRoutes = require('./routes/scheduleRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/families', familyRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/medications', medicationRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
+// Nested route: /api/patients/:pid/schedules
+app.use('/api/patients/:pid/schedules', scheduleRoutes);
 
 // --------------- Fallback: Serve index.html for non-API routes ---------------
 
