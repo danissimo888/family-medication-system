@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { supabase } = require('./config/supabase');
+const auditMiddleware = require('./middleware/audit');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/', limiter);
 // Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(auditMiddleware);
 
 // Serve static files from public/
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -56,12 +58,18 @@ const patientRoutes = require('./routes/patientRoutes');
 const medicationRoutes = require('./routes/medicationRoutes');
 const prescriptionRoutes = require('./routes/prescriptionRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
+const allergyRoutes = require('./routes/allergyRoutes');
+const interactionRoutes = require('./routes/interactionRoutes');
+const administrationRoutes = require('./routes/administrationRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/families', familyRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/medications', medicationRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/interactions', interactionRoutes);
+app.use('/api', administrationRoutes);
+app.use('/api', allergyRoutes); // Handles /api/patients/:patientId/allergies and /api/allergies/:id
 // Nested route: /api/patients/:pid/schedules
 app.use('/api/patients/:pid/schedules', scheduleRoutes);
 

@@ -17,13 +17,12 @@ async function createBatch(schedules) {
  * Get daily schedule for a patient
  */
 async function getDailySchedule(patientId, date) {
-  const startOfDay = `${date} 00:00:00`;
-  const endOfDay = `${date} 23:59:59`;
-
   const { data, error } = await supabase
     .from('medication_schedules')
     .select(`
       id,
+      patient_id,
+      scheduled_date,
       scheduled_time,
       status,
       prescription_item_id,
@@ -34,14 +33,13 @@ async function getDailySchedule(patientId, date) {
         medication_id,
         medications (
           id,
-          name,
-          generic_name
+          generic_name,
+          brand_name
         )
       )
     `)
     .eq('patient_id', patientId)
-    .gte('scheduled_time', startOfDay)
-    .lte('scheduled_time', endOfDay)
+    .eq('scheduled_date', date)
     .order('scheduled_time', { ascending: true });
 
   if (error) throw error;
@@ -62,16 +60,16 @@ async function findById(id) {
         instructions,
         medications (
           id,
-          name,
-          generic_name
+          generic_name,
+          brand_name
         )
       )
     `)
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
-  return data;
+  return data || null;
 }
 
 /**
@@ -97,18 +95,22 @@ async function getScheduleRange(patientId, startDate, endDate) {
     .from('medication_schedules')
     .select(`
       id,
+      patient_id,
+      scheduled_date,
       scheduled_time,
       status,
       prescription_items (
         dosage,
         medications (
-          name
+          generic_name,
+          brand_name
         )
       )
     `)
     .eq('patient_id', patientId)
-    .gte('scheduled_time', `${startDate} 00:00:00`)
-    .lte('scheduled_time', `${endDate} 23:59:59`)
+    .gte('scheduled_date', startDate)
+    .lte('scheduled_date', endDate)
+    .order('scheduled_date', { ascending: true })
     .order('scheduled_time', { ascending: true });
 
   if (error) throw error;

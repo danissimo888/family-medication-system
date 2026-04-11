@@ -157,23 +157,23 @@
 ## Phase 6 — Dose Logging and Adherence
 
 ### 6.1 Administration Records
-- [ ] Create `src/models/administrationModel.js`
-- [ ] Create `src/controllers/administrationController.js`
-- [ ] Create `src/routes/administrationRoutes.js`
-- [ ] POST /api/administration-records — insert record, update medication_schedules.status
-- [ ] GET /api/patients/:pid/administration-records — dose history
+- [x] Create `src/models/administrationModel.js`
+- [x] Create `src/controllers/administrationController.js`
+- [x] Create `src/routes/administrationRoutes.js`
+- [x] POST /api/administration-records — insert record, update medication_schedules.status
+- [x] GET /api/patients/:pid/administration-records — dose history
 
 ### 6.2 Adherence Statistics
-- [ ] Create `src/services/adherenceService.js` — calculate (taken / total) * 100 for a date range
-- [ ] GET /api/patients/:pid/adherence?period=7d — return adherence percentage
+- [x] Create `src/services/adherenceService.js` — calculate (taken / total) * 100 for a date range
+- [x] GET /api/patients/:pid/adherence?period=7d — return adherence percentage
 
 ### 6.3 Audit Logging
-- [ ] Create `src/middleware/audit.js` — on POST/PUT/DELETE responses, write to audit_logs
-- [ ] Wire audit middleware into the Express app
+- [x] Create `src/middleware/audit.js` — on POST/PUT/DELETE responses, write to audit_logs
+- [x] Wire audit middleware into the Express app
 
 ### 6.4 Testing
-- [ ] Test: log doses (taken and skipped), verify adherence calculation is correct
-- [ ] Test: verify audit_logs rows are created for mutations
+- [x] Test: log doses (taken and skipped), verify adherence calculation is correct
+- [x] Test: verify audit_logs rows are created for mutations
 
 ---
 
