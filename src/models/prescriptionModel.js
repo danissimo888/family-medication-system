@@ -29,8 +29,8 @@ async function create(prescriptionData, items) {
       *,
       medications (
         id,
-        name,
         generic_name,
+        brand_name,
         description
       )
     `);
@@ -60,8 +60,8 @@ async function findByPatient(patientId) {
         instructions,
         medications (
           id,
-          name,
-          generic_name
+          generic_name,
+          brand_name
         )
       )
     `)
@@ -88,10 +88,8 @@ async function findById(id) {
         instructions,
         medications (
           id,
-          name,
           generic_name,
           description,
-          common_dosages,
           side_effects
         )
       )
@@ -146,7 +144,7 @@ async function findActiveByPatient(patientId) {
         medication_id,
         medications (
           id,
-          name
+          generic_name
         )
       )
     `)

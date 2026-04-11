@@ -129,28 +129,28 @@
 ## Phase 5 — Safety Checks (Interactions and Allergies)
 
 ### 5.1 Patient Allergies
-- [ ] Create `src/models/allergyModel.js`
-- [ ] Create `src/controllers/allergyController.js`
-- [ ] Create `src/routes/allergyRoutes.js`
-- [ ] Implement CRUD for patient allergies
+- [x] Create `src/models/allergyModel.js`
+- [x] Create `src/controllers/allergyController.js`
+- [x] Create `src/routes/allergyRoutes.js`
+- [x] Implement CRUD for patient allergies
 
 ### 5.2 Drug Interactions
-- [ ] Create `src/models/interactionModel.js`
-- [ ] Create `src/controllers/interactionController.js`
-- [ ] Create `src/routes/interactionRoutes.js`
-- [ ] Admin CRUD for interaction pairs
-- [ ] GET /api/interactions/check?meds=id1,id2,id3 — check interactions among a set of medications
+- [x] Create `src/models/interactionModel.js`
+- [x] Create `src/controllers/interactionController.js`
+- [x] Create `src/routes/interactionRoutes.js`
+- [x] Admin CRUD for interaction pairs
+- [x] GET /api/interactions/check?meds=id1,id2,id3 — check interactions among a set of medications
 
 ### 5.3 Safety Service
-- [ ] Create `src/services/safetyService.js`
-- [ ] Implement `checkInteractions(patient_id, medication_ids)` — cross-reference new meds against patient's active prescriptions via drug_interactions table
-- [ ] Implement `checkAllergies(patient_id, medication_ids)` — cross-reference new meds against patient_allergies
-- [ ] Integrate safety checks into prescriptionController.create — return 409 with warnings if flagged
+- [x] Create `src/services/safetyService.js`
+- [x] Implement `checkInteractions(patient_id, medication_ids)` — cross-reference new meds against patient's active prescriptions via drug_interactions table
+- [x] Implement `checkAllergies(patient_id, medication_ids)` — cross-reference new meds against patient_allergies
+- [x] Integrate safety checks into prescriptionController.create — return 409 with warnings if flagged
 
 ### 5.4 Testing
-- [ ] Test: add allergy for a drug, then prescribe that drug — expect 409 warning
-- [ ] Test: seed interaction between Drug A and Drug B, prescribe A then B — expect 409 warning
-- [ ] Test: prescribe a safe drug — expect 201 success
+- [x] Test: add allergy for a drug, then prescribe that drug — expect 409 warning
+- [x] Test: seed interaction between Drug A and Drug B, prescribe A then B — expect 409 warning
+- [x] Test: prescribe a safe drug — expect 201 success
 
 ---
 

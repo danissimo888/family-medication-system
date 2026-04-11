@@ -1,13 +1,14 @@
 const prescriptionModel = require('../models/prescriptionModel');
 const patientModel = require('../models/patientModel');
 const scheduleService = require('../services/scheduleService');
+const safetyService = require('../services/safetyService');
 
 /**
  * POST /api/prescriptions - Create new prescription with items
  */
 async function create(req, res) {
   try {
-    const { patient_id, prescribed_by, start_date, end_date, notes, items } = req.body;
+    const { patient_id, prescribed_by, start_date, end_date, notes, items, override_warnings } = req.body;
 
     // Validation
     if (!patient_id || !prescribed_by || !start_date || !items || items.length === 0) {
@@ -24,6 +25,23 @@ async function create(req, res) {
 
     if (patient.family_id !== req.user.family_id) {
       return res.status(403).json({ error: 'Access denied: patient not in your family' });
+    }
+
+    // Extract medication IDs from items
+    const medicationIds = items.map(item => item.medication_id);
+
+    // Run safety checks
+    const safetyCheck = await safetyService.runSafetyChecks(patient_id, medicationIds);
+
+    // If warnings exist and user hasn't overridden, return 409 with warnings
+    if (!safetyCheck.safe && !override_warnings) {
+      return res.status(409).json({
+        error: 'Safety warnings detected',
+        warnings: safetyCheck.warnings,
+        hasHighSeverity: safetyCheck.hasHighSeverity,
+        hasModerateSeverity: safetyCheck.hasModerateSeverity,
+        message: 'Please review the warnings and confirm to proceed'
+      });
     }
 
     // Create prescription with items
@@ -44,7 +62,13 @@ async function create(req, res) {
       await scheduleService.generate(item.id, patient_id, start_date, end_date);
     }
 
-    res.status(201).json(prescription);
+    // Include warnings in response if they were overridden
+    const response = {
+      ...prescription,
+      ...(safetyCheck.warnings.length > 0 && { warnings_overridden: safetyCheck.warnings })
+    };
+
+    res.status(201).json(response);
   } catch (error) {
     console.error('Error creating prescription:', error);
     res.status(500).json({ error: 'Failed to create prescription' });
