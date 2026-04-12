@@ -61,6 +61,9 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const allergyRoutes = require('./routes/allergyRoutes');
 const interactionRoutes = require('./routes/interactionRoutes');
 const administrationRoutes = require('./routes/administrationRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const noteRoutes = require('./routes/noteRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/families', familyRoutes);
@@ -68,10 +71,14 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/medications', medicationRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/interactions', interactionRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/audit-logs', auditRoutes);
 app.use('/api', administrationRoutes);
 app.use('/api', allergyRoutes); // Handles /api/patients/:patientId/allergies and /api/allergies/:id
 // Nested route: /api/patients/:pid/schedules
 app.use('/api/patients/:pid/schedules', scheduleRoutes);
+// Nested route: /api/patients/:pid/notes
+app.use('/api/patients/:pid/notes', noteRoutes);
 
 // --------------- Fallback: Serve index.html for non-API routes ---------------
 

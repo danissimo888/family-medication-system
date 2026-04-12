@@ -180,30 +180,31 @@
 ## Phase 7 — Notifications and Caregiver Notes
 
 ### 7.1 Notifications
-- [ ] Create `src/models/notificationModel.js`
-- [ ] Create `src/controllers/notificationController.js`
-- [ ] Create `src/routes/notificationRoutes.js`
-- [ ] GET /api/notifications — list current user's notifications
-- [ ] PUT /api/notifications/:id/read — mark as read
-- [ ] PUT /api/notifications/read-all — mark all as read
+- [x] Create `src/models/notificationModel.js`
+- [x] Create `src/controllers/notificationController.js`
+- [x] Create `src/routes/notificationRoutes.js`
+- [x] GET /api/notifications — list current user's notifications
+- [x] PUT /api/notifications/:id/read — mark as read
+- [x] PUT /api/notifications/read-all — mark all as read
 
 ### 7.2 Notification Service
-- [ ] Create `src/services/notificationService.js`
-- [ ] Implement: create notification for upcoming dose reminders
-- [ ] Implement: create notification for missed doses (for patient and caregivers)
-- [ ] Implement: create notification for safety warnings
-- [ ] Integrate missed-dose detection: when a schedule slot passes without a logged dose, generate notifications
+- [x] Create `src/services/notificationService.js`
+- [x] Implement: create notification for upcoming dose reminders
+- [x] Implement: create notification for missed doses (for patient and caregivers)
+- [x] Implement: create notification for safety warnings
+- [x] Integrate missed-dose detection: when a schedule slot passes without a logged dose, generate notifications
 
 ### 7.3 Caregiver Notes
-- [ ] Create `src/models/noteModel.js`
-- [ ] Create `src/controllers/noteController.js`
-- [ ] Create `src/routes/noteRoutes.js`
-- [ ] CRUD for caregiver notes (GET, POST, PUT, DELETE on /api/patients/:pid/notes)
+- [x] Create `src/models/noteModel.js`
+- [x] Create `src/controllers/noteController.js`
+- [x] Create `src/routes/noteRoutes.js`
+- [x] CRUD for caregiver notes (GET, POST, PUT, DELETE on /api/patients/:pid/notes)
 
 ### 7.4 Audit Log Viewer
-- [ ] Create `src/controllers/auditController.js`
-- [ ] Create `src/routes/auditRoutes.js`
-- [ ] GET /api/audit-logs with query filters (user_id, action, table, date range, pagination) — admin only
+- [x] Create `src/controllers/auditController.js`
+- [x] Create `src/routes/auditRoutes.js`
+- [x] Create `src/models/auditModel.js`
+- [x] GET /api/audit-logs with query filters (user_id, action, table, date range, pagination) — admin only
 
 ### 7.5 Testing
 - [ ] Test: miss a dose, verify notifications created for patient and caregiver
