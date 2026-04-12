@@ -50,11 +50,11 @@ async function getUnreadCount(userId) {
 async function markAsRead(notificationId, userId) {
   const { data, error } = await supabase
     .from('notifications')
-    .update({ is_read: true, read_at: new Date().toISOString() })
+    .update({ is_read: true })
     .eq('id', notificationId)
     .eq('user_id', userId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -68,7 +68,7 @@ async function markAsRead(notificationId, userId) {
 async function markAllAsRead(userId) {
   const { data, error } = await supabase
     .from('notifications')
-    .update({ is_read: true, read_at: new Date().toISOString() })
+    .update({ is_read: true })
     .eq('user_id', userId)
     .eq('is_read', false)
     .select();
@@ -79,7 +79,7 @@ async function markAllAsRead(userId) {
 
 /**
  * Create a notification
- * @param {object} notificationData - { user_id, type, title, message, related_entity_type, related_entity_id }
+ * @param {object} notificationData - { user_id, type, title, message, reference_id }
  * @returns {Promise<object>}
  */
 async function create(notificationData) {
@@ -90,8 +90,7 @@ async function create(notificationData) {
       type: notificationData.type,
       title: notificationData.title,
       message: notificationData.message,
-      related_entity_type: notificationData.related_entity_type || null,
-      related_entity_id: notificationData.related_entity_id || null,
+      reference_id: notificationData.reference_id || null,
       is_read: false
     })
     .select()
@@ -114,7 +113,7 @@ async function deleteOldRead(daysOld = 30) {
     .from('notifications')
     .delete()
     .eq('is_read', true)
-    .lt('read_at', cutoffDate.toISOString())
+    .lt('created_at', cutoffDate.toISOString())
     .select();
 
   if (error) throw error;

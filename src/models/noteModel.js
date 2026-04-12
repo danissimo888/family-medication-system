@@ -12,14 +12,15 @@ async function findByPatientId(patientId, familyId) {
     .select(`
       id,
       patient_id,
-      caregiver_id,
+      caregiver_user_id,
       note_date,
       content,
       created_at,
       updated_at,
-      users!caregiver_notes_caregiver_id_fkey (
+      users!caregiver_notes_caregiver_user_id_fkey (
         id,
-        name,
+        first_name,
+        last_name,
         email
       )
     `)
@@ -54,14 +55,15 @@ async function findById(noteId, familyId) {
     .select(`
       id,
       patient_id,
-      caregiver_id,
+      caregiver_user_id,
       note_date,
       content,
       created_at,
       updated_at,
-      users!caregiver_notes_caregiver_id_fkey (
+      users!caregiver_notes_caregiver_user_id_fkey (
         id,
-        name,
+        first_name,
+        last_name,
         email
       ),
       patients!caregiver_notes_patient_id_fkey (
@@ -103,21 +105,22 @@ async function create(noteData, familyId) {
     .from('caregiver_notes')
     .insert({
       patient_id: noteData.patient_id,
-      caregiver_id: noteData.caregiver_id,
+      caregiver_user_id: noteData.caregiver_id,
       note_date: noteData.note_date,
       content: noteData.content
     })
     .select(`
       id,
       patient_id,
-      caregiver_id,
+      caregiver_user_id,
       note_date,
       content,
       created_at,
       updated_at,
-      users!caregiver_notes_caregiver_id_fkey (
+      users!caregiver_notes_caregiver_user_id_fkey (
         id,
-        name,
+        first_name,
+        last_name,
         email
       )
     `)
@@ -141,7 +144,7 @@ async function update(noteId, updates, caregiverId, familyId) {
     .from('caregiver_notes')
     .select(`
       id,
-      caregiver_id,
+      caregiver_user_id,
       patients!caregiver_notes_patient_id_fkey (
         family_id
       )
@@ -157,7 +160,7 @@ async function update(noteId, updates, caregiverId, familyId) {
     throw new Error('Unauthorized: Note not in your family');
   }
 
-  if (existingNote.caregiver_id !== caregiverId) {
+  if (existingNote.caregiver_user_id !== caregiverId) {
     throw new Error('Unauthorized: Only the note author can update it');
   }
 
@@ -172,14 +175,15 @@ async function update(noteId, updates, caregiverId, familyId) {
     .select(`
       id,
       patient_id,
-      caregiver_id,
+      caregiver_user_id,
       note_date,
       content,
       created_at,
       updated_at,
-      users!caregiver_notes_caregiver_id_fkey (
+      users!caregiver_notes_caregiver_user_id_fkey (
         id,
-        name,
+        first_name,
+        last_name,
         email
       )
     `)
@@ -202,7 +206,7 @@ async function deleteNote(noteId, caregiverId, familyId) {
     .from('caregiver_notes')
     .select(`
       id,
-      caregiver_id,
+      caregiver_user_id,
       patients!caregiver_notes_patient_id_fkey (
         family_id
       )
@@ -218,7 +222,7 @@ async function deleteNote(noteId, caregiverId, familyId) {
     throw new Error('Unauthorized: Note not in your family');
   }
 
-  if (existingNote.caregiver_id !== caregiverId) {
+  if (existingNote.caregiver_user_id !== caregiverId) {
     throw new Error('Unauthorized: Only the note author can delete it');
   }
 

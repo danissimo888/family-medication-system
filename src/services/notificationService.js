@@ -14,8 +14,7 @@ async function createDoseReminder(userId, scheduleData) {
     type: 'reminder',
     title: 'Medication Reminder',
     message: `Time to take ${medication_name} at ${scheduled_time}`,
-    related_entity_type: 'medication_schedule',
-    related_entity_id: schedule_id
+    reference_id: schedule_id
   });
 }
 
@@ -45,16 +44,22 @@ async function createMissedDoseNotifications(patientId, scheduleData) {
     type: 'missed_dose',
     title: 'Missed Dose',
     message: `You missed ${medication_name} scheduled at ${scheduled_time}`,
-    related_entity_type: 'medication_schedule',
-    related_entity_id: schedule_id
+    reference_id: schedule_id
   });
 
   // Get all caregivers in the family
   const { data: caregivers, error: caregiversError } = await supabase
     .from('users')
-    .select('id, name')
+    .select(`
+      id,
+      first_name,
+      last_name,
+      roles!inner (
+        name
+      )
+    `)
     .eq('family_id', patient.family_id)
-    .eq('role', 'caregiver')
+    .eq('roles.name', 'caregiver')
     .eq('is_active', true);
 
   if (caregiversError) {
@@ -65,11 +70,11 @@ async function createMissedDoseNotifications(patientId, scheduleData) {
   // Get patient name for caregiver notification
   const { data: patientUser, error: patientUserError } = await supabase
     .from('users')
-    .select('name')
+    .select('first_name, last_name')
     .eq('id', patient.user_id)
     .single();
 
-  const patientName = patientUser?.name || 'Patient';
+  const patientName = patientUser ? `${patientUser.first_name} ${patientUser.last_name}` : 'Patient';
 
   // Notify all caregivers
   for (const caregiver of caregivers) {
@@ -78,8 +83,7 @@ async function createMissedDoseNotifications(patientId, scheduleData) {
       type: 'missed_dose',
       title: 'Patient Missed Dose',
       message: `${patientName} missed ${medication_name} scheduled at ${scheduled_time}`,
-      related_entity_type: 'medication_schedule',
-      related_entity_id: schedule_id
+      reference_id: schedule_id
     });
   }
 }
@@ -100,8 +104,7 @@ async function createSafetyWarning(userId, warningData) {
     type: 'safety_warning',
     title,
     message,
-    related_entity_type: type,
-    related_entity_id: null
+    reference_id: null
   });
 }
 
@@ -127,18 +130,23 @@ async function createAdherenceAlert(patientId, adherenceRate, period) {
   // Get patient name
   const { data: patientUser } = await supabase
     .from('users')
-    .select('name')
+    .select('first_name, last_name')
     .eq('id', patient.user_id)
     .single();
 
-  const patientName = patientUser?.name || 'Patient';
+  const patientName = patientUser ? `${patientUser.first_name} ${patientUser.last_name}` : 'Patient';
 
   // Get all caregivers in the family
   const { data: caregivers, error: caregiversError } = await supabase
     .from('users')
-    .select('id')
+    .select(`
+      id,
+      roles!inner (
+        name
+      )
+    `)
     .eq('family_id', patient.family_id)
-    .eq('role', 'caregiver')
+    .eq('roles.name', 'caregiver')
     .eq('is_active', true);
 
   if (caregiversError) {
@@ -153,8 +161,7 @@ async function createAdherenceAlert(patientId, adherenceRate, period) {
       type: 'adherence_alert',
       title: 'Low Adherence Alert',
       message: `${patientName}'s adherence rate is ${adherenceRate.toFixed(1)}% over the last ${period}`,
-      related_entity_type: 'patient',
-      related_entity_id: patientId
+      reference_id: patientId
     });
   }
 }

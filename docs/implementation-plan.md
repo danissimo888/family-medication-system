@@ -207,9 +207,9 @@
 - [x] GET /api/audit-logs with query filters (user_id, action, table, date range, pagination) — admin only
 
 ### 7.5 Testing
-- [ ] Test: miss a dose, verify notifications created for patient and caregiver
-- [ ] Test: add/edit/delete caregiver notes
-- [ ] Test: query audit logs with filters
+- [x] Test: miss a dose, verify notifications created for patient and caregiver
+- [x] Test: add/edit/delete caregiver notes (partially tested - create/list working, update/delete pending due to rate limit)
+- [ ] Test: query audit logs with filters (requires admin user)
 
 ---
 
