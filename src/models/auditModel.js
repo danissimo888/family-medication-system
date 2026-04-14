@@ -18,24 +18,7 @@ async function findWithFilters(filters = {}) {
 
   let query = supabase
     .from('audit_logs')
-    .select(`
-      id,
-      user_id,
-      action,
-      table_name,
-      record_id,
-      old_values,
-      new_values,
-      ip_address,
-      user_agent,
-      created_at,
-      users!audit_logs_user_id_fkey (
-        id,
-        name,
-        email,
-        role
-      )
-    `, { count: 'exact' })
+    .select('*', { count: 'exact' })
     .order('created_at', { ascending: false });
 
   // Apply filters
@@ -89,13 +72,12 @@ async function findById(logId) {
       old_values,
       new_values,
       ip_address,
-      user_agent,
       created_at,
-      users!audit_logs_user_id_fkey (
+      users (
         id,
-        name,
-        email,
-        role
+        first_name,
+        last_name,
+        email
       )
     `)
     .eq('id', logId)
@@ -123,13 +105,12 @@ async function findByRecord(tableName, recordId) {
       old_values,
       new_values,
       ip_address,
-      user_agent,
       created_at,
-      users!audit_logs_user_id_fkey (
+      users (
         id,
-        name,
-        email,
-        role
+        first_name,
+        last_name,
+        email
       )
     `)
     .eq('table_name', tableName)

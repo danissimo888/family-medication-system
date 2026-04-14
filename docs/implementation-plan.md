@@ -208,35 +208,35 @@
 
 ### 7.5 Testing
 - [x] Test: miss a dose, verify notifications created for patient and caregiver
-- [x] Test: add/edit/delete caregiver notes (partially tested - create/list working, update/delete pending due to rate limit)
-- [ ] Test: query audit logs with filters (requires admin user)
+- [x] Test: add/edit/delete caregiver notes (fully tested - create/list/update/delete all working)
+- [x] Test: query audit logs with filters (tested - action, table_name, user_id, date range, pagination, admin-only access)
 
 ---
 
 ## Phase 8 — Frontend: Landing Page, Login, Registration
 
 ### 8.1 Shared Assets
-- [ ] Create `public/css/styles.css` — custom styles on top of Bootstrap 5
-- [ ] Create `public/js/app.js` — API helper (apiFetch with JWT), auth state check, logout, navbar rendering
-- [ ] Configure `express.static('public')` in server.js
+- [x] Create `public/css/styles.css` — custom styles on top of Bootstrap 5
+- [x] Create `public/js/app.js` — API helper (apiFetch with JWT), auth state check, logout, navbar rendering
+- [x] Configure `express.static('public')` in server.js
 
 ### 8.2 Landing Page
-- [ ] Create `public/index.html` — Bootstrap 5 navbar, hero section, feature highlights, CTA buttons (Register / Login)
-- [ ] Responsive layout for mobile, tablet, desktop
+- [x] Create `public/index.html` — Bootstrap 5 navbar, hero section, feature highlights, CTA buttons (Register / Login)
+- [x] Responsive layout for mobile, tablet, desktop
 
 ### 8.3 Registration Page
-- [ ] Create `public/pages/register.html` — form with email, password, name, role select, invite code
-- [ ] Create `public/js/register.js` — form validation, call POST /api/auth/register, handle errors
-- [ ] Password validation: min 8 chars, uppercase, lowercase, number
+- [x] Create `public/pages/register.html` — form with email, password, name, role select, invite code
+- [x] Create `public/js/register.js` — form validation, call POST /api/auth/register, handle errors
+- [x] Password validation: min 8 chars, uppercase, lowercase, number
 
 ### 8.4 Login Page
-- [ ] Create `public/pages/login.html` — email and password form
-- [ ] Create `public/js/login.js` — call POST /api/auth/login, store JWT in localStorage, redirect by role
+- [x] Create `public/pages/login.html` — email and password form
+- [x] Create `public/js/login.js` — call POST /api/auth/login, store JWT in localStorage, redirect by role
 
 ### 8.5 Testing
-- [ ] Test in browser: register a new user
-- [ ] Test in browser: log in, verify token stored, /me works
-- [ ] Test: role-based redirect after login
+- [x] Test in browser: register a new user
+- [x] Test in browser: log in, verify token stored, /me works
+- [x] Test: role-based redirect after login
 
 ---
 
