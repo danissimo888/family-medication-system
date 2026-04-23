@@ -1,4 +1,4 @@
-# Family Medication Management System
+# Online Family Chronic Disease Medication Management System Based on Bootsrap
 
 A web-based platform for families managing chronic conditions such as Diabetes and Hypertension. Patients can track prescriptions, schedules, and doses, while caregivers monitor adherence remotely. The system enforces drug-drug interaction and allergy safety checks at dose administration time.
 
