@@ -4,7 +4,9 @@
   "description": "Family chronic disease medication management system",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "audit": "npm audit --omit=dev",
+    "audit:fix": "npm audit fix --omit=dev"
   },
   "author": "Deniz Ahmed",
   "license": "ISC",

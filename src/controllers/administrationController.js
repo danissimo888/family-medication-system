@@ -3,6 +3,7 @@ const scheduleModel = require('../models/scheduleModel');
 const patientModel = require('../models/patientModel');
 const { authorizePatientAccess } = require('./patientController');
 const adherenceService = require('../services/adherenceService');
+const notificationService = require('../services/notificationService');
 
 const VALID_STATUSES = ['taken', 'skipped', 'missed'];
 
@@ -51,6 +52,29 @@ async function create(req, res) {
     });
 
     const updatedSchedule = await scheduleModel.updateStatus(schedule_id, status);
+
+    // Fire notification (non-blocking)
+    try {
+      const medName = schedule.prescription_items?.medications?.generic_name
+        || schedule.prescription_items?.medications?.brand_name
+        || 'medication';
+      const patient = await patientModel.findById(schedule.patient_id);
+      if (status === 'taken') {
+        await notificationService.createDoseReminder(patient.user_id, {
+          medication_name: medName,
+          scheduled_time: schedule.scheduled_time,
+          schedule_id
+        });
+      } else if (status === 'skipped' || status === 'missed') {
+        await notificationService.createMissedDoseNotifications(schedule.patient_id, {
+          medication_name: medName,
+          scheduled_time: schedule.scheduled_time,
+          schedule_id
+        });
+      }
+    } catch (notifErr) {
+      console.error('Notification error:', notifErr);
+    }
 
     res.status(201).json({
       ...administrationRecord,

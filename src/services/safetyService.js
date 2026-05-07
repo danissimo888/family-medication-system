@@ -14,14 +14,9 @@ async function checkInteractions(patientId, newMedicationIds) {
     const activePrescriptions = await prescriptionModel.findActiveByPatient(patientId);
 
     // Extract all medication IDs from active prescriptions
-    const activeMedicationIds = [];
-    for (const prescription of activePrescriptions) {
-      if (prescription.prescription_items) {
-        for (const item of prescription.prescription_items) {
-          activeMedicationIds.push(item.medication_id);
-        }
-      }
-    }
+    const activeMedicationIds = activePrescriptions.flatMap(p =>
+      (p.prescription_items || []).map(item => item.medication_id)
+    );
 
     // Combine active medications with new medications
     const allMedicationIds = [...new Set([...activeMedicationIds, ...newMedicationIds])];
@@ -46,7 +41,7 @@ async function checkInteractions(patientId, newMedicationIds) {
       severity: interaction.severity,
       medication_1: interaction.med1.generic_name,
       medication_2: interaction.med2.generic_name,
-      description: interaction.description
+      message: interaction.description
     }));
   } catch (error) {
     console.error('Error checking interactions:', error);
@@ -70,7 +65,7 @@ async function checkAllergies(patientId, medicationIds) {
       type: 'allergy',
       severity: allergy.severity,
       medication: allergy.medication ? allergy.medication.generic_name : allergy.allergen_name,
-      notes: allergy.reaction || 'Patient has documented allergy to this medication'
+      message: allergy.reaction || 'Patient has documented allergy to this medication'
     }));
   } catch (error) {
     console.error('Error checking allergies:', error);

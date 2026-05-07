@@ -12,7 +12,28 @@ function generateInviteCode() {
  * Create a new family with an auto-generated invite code.
  */
 async function create({ name, created_by }) {
-  const invite_code = generateInviteCode();
+  let invite_code;
+  let attempts = 0;
+  const maxAttempts = 5;
+
+  // Generate unique invite code with collision check
+  while (attempts < maxAttempts) {
+    invite_code = generateInviteCode();
+
+    // Check if code already exists
+    const { data: existing } = await supabase
+      .from('families')
+      .select('id')
+      .eq('invite_code', invite_code)
+      .maybeSingle();
+
+    if (!existing) break; // Code is unique
+    attempts++;
+  }
+
+  if (attempts === maxAttempts) {
+    throw new Error('Failed to generate unique invite code after multiple attempts');
+  }
 
   const { data, error } = await supabase
     .from('families')

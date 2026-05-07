@@ -7,124 +7,55 @@ const scheduleModel = require('../models/scheduleModel');
  * @param {string} startDate - Start date (YYYY-MM-DD)
  * @param {string} endDate - End date (YYYY-MM-DD) or null for ongoing
  */
-async function generate(prescriptionItemId, patientId, startDate, endDate) {
-  const { data: item, error } = await require('../config/supabase').supabase
-    .from('prescription_items')
-    .select('frequency')
-    .eq('id', prescriptionItemId)
-    .single();
+async function generate(prescriptionItemId, patientId, startDate, endDate, scheduleTimes, frequency) {
+  if (!frequency) {
+    const { data: item, error } = await require('../config/supabase').supabase
+      .from('prescription_items')
+      .select('frequency')
+      .eq('id', prescriptionItemId)
+      .single();
+    if (error) throw error;
+    frequency = item.frequency;
+  }
 
-  if (error) throw error;
-
-  const frequency = item.frequency.toLowerCase();
+  frequency = frequency.toLowerCase();
   const schedules = [];
 
-  // Parse frequency and generate schedule slots
   const start = new Date(startDate);
   const end = endDate ? new Date(endDate) : null;
-
-  // Calculate duration in days (default to 30 days if no end date)
   const durationDays = end ? Math.ceil((end - start) / (1000 * 60 * 60 * 24)) : 30;
 
-  // Generate schedules based on frequency
-  if (frequency.includes('once daily') || frequency.includes('1x daily') || frequency === 'once_daily') {
-    // Once daily at 8:00 AM
-    for (let day = 0; day <= durationDays; day++) {
-      const scheduleDate = new Date(start);
-      scheduleDate.setDate(start.getDate() + day);
-      schedules.push({
-        prescription_item_id: prescriptionItemId,
-        patient_id: patientId,
-        scheduled_date: scheduleDate.toISOString().split('T')[0],
-        scheduled_time: '08:00:00',
-        status: 'pending'
-      });
-    }
-  } else if (frequency.includes('twice daily') || frequency.includes('2x daily') || frequency === 'twice_daily') {
-    // Twice daily at 8:00 AM and 8:00 PM
-    for (let day = 0; day <= durationDays; day++) {
-      const scheduleDate = new Date(start);
-      scheduleDate.setDate(start.getDate() + day);
-      const dateStr = scheduleDate.toISOString().split('T')[0];
-      schedules.push({
-        prescription_item_id: prescriptionItemId,
-        patient_id: patientId,
-        scheduled_date: dateStr,
-        scheduled_time: '08:00:00',
-        status: 'pending'
-      });
-      schedules.push({
-        prescription_item_id: prescriptionItemId,
-        patient_id: patientId,
-        scheduled_date: dateStr,
-        scheduled_time: '20:00:00',
-        status: 'pending'
-      });
-    }
-  } else if (frequency.includes('three times daily') || frequency.includes('3x daily') || frequency === 'three_times_daily') {
-    // Three times daily at 8:00 AM, 2:00 PM, 8:00 PM
-    for (let day = 0; day <= durationDays; day++) {
-      const scheduleDate = new Date(start);
-      scheduleDate.setDate(start.getDate() + day);
-      const dateStr = scheduleDate.toISOString().split('T')[0];
-      schedules.push({
-        prescription_item_id: prescriptionItemId,
-        patient_id: patientId,
-        scheduled_date: dateStr,
-        scheduled_time: '08:00:00',
-        status: 'pending'
-      });
-      schedules.push({
-        prescription_item_id: prescriptionItemId,
-        patient_id: patientId,
-        scheduled_date: dateStr,
-        scheduled_time: '14:00:00',
-        status: 'pending'
-      });
-      schedules.push({
-        prescription_item_id: prescriptionItemId,
-        patient_id: patientId,
-        scheduled_date: dateStr,
-        scheduled_time: '20:00:00',
-        status: 'pending'
-      });
-    }
-  } else if (frequency.includes('every other day') || frequency === 'every_other_day') {
-    // Every other day at 8:00 AM
-    for (let day = 0; day <= durationDays; day += 2) {
-      const scheduleDate = new Date(start);
-      scheduleDate.setDate(start.getDate() + day);
-      schedules.push({
-        prescription_item_id: prescriptionItemId,
-        patient_id: patientId,
-        scheduled_date: scheduleDate.toISOString().split('T')[0],
-        scheduled_time: '08:00:00',
-        status: 'pending'
-      });
-    }
-  } else if (frequency.includes('weekly') || frequency === 'weekly') {
-    // Weekly at 8:00 AM
-    for (let week = 0; week * 7 <= durationDays; week++) {
-      const scheduleDate = new Date(start);
-      scheduleDate.setDate(start.getDate() + (week * 7));
-      schedules.push({
-        prescription_item_id: prescriptionItemId,
-        patient_id: patientId,
-        scheduled_date: scheduleDate.toISOString().split('T')[0],
-        scheduled_time: '08:00:00',
-        status: 'pending'
-      });
-    }
+  const defaultTimes = {
+    once_daily: ['08:00:00'],
+    twice_daily: ['08:00:00', '20:00:00'],
+    three_times_daily: ['08:00:00', '14:00:00', '20:00:00'],
+    four_times_daily: ['08:00:00', '12:00:00', '16:00:00', '20:00:00'],
+    every_other_day: ['08:00:00'],
+    weekly: ['08:00:00']
+  };
+
+  const freqKey = frequency.replace(/ /g, '_');
+  let times;
+  if (scheduleTimes && scheduleTimes.length > 0) {
+    times = scheduleTimes.map(t => t.length === 5 ? t + ':00' : t);
   } else {
-    // Default: once daily
-    for (let day = 0; day <= durationDays; day++) {
-      const scheduleDate = new Date(start);
-      scheduleDate.setDate(start.getDate() + day);
+    times = defaultTimes[freqKey] || defaultTimes[frequency] || ['08:00:00'];
+  }
+
+  const isEveryOtherDay = frequency.includes('every other day') || freqKey === 'every_other_day';
+  const isWeekly = frequency.includes('weekly') || freqKey === 'weekly';
+  const step = isEveryOtherDay ? 2 : isWeekly ? 7 : 1;
+
+  for (let day = 0; day <= durationDays; day += step) {
+    const scheduleDate = new Date(start);
+    scheduleDate.setDate(start.getDate() + day);
+    const dateStr = scheduleDate.toISOString().split('T')[0];
+    for (const t of times) {
       schedules.push({
         prescription_item_id: prescriptionItemId,
         patient_id: patientId,
-        scheduled_date: scheduleDate.toISOString().split('T')[0],
-        scheduled_time: '08:00:00',
+        scheduled_date: dateStr,
+        scheduled_time: t,
         status: 'pending'
       });
     }

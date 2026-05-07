@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Admin Panel - MedFamily">
+  <title>Admin Panel - MedFamily</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/pages/admin.html">
+        <i class="bi bi-shield-check text-primary me-2"></i>
+        <span class="fw-bold">MedFamily Admin</span>
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-center">
+          <!-- User Menu -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+              <i class="bi bi-person-circle me-1"></i>
+              <span id="userName">Admin</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="/pages/admin.html"><i class="bi bi-house-door me-2"></i>Admin Panel</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+        <div class="position-sticky pt-3">
+          <ul class="nav flex-column admin-tabs">
+            <li class="nav-item">
+              <a class="nav-link active" href="#" data-tab="users">
+                <i class="bi bi-people me-2"></i>
+                Users
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-tab="medications">
+                <i class="bi bi-capsule me-2"></i>
+                Medications
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-tab="interactions">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Drug Interactions
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-tab="audit">
+                <i class="bi bi-journal-text me-2"></i>
+                Audit Logs
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+        <!-- Users Tab -->
+        <div id="usersTab" class="tab-content active">
+          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">User Management</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshUsersBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Stats Cards -->
+          <div class="row mb-4" id="userStatsContainer">
+            <div class="col-md-4 mb-3">
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-value" id="totalUsers">0</div>
+                <div class="stat-label">Total Users</div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-value" id="activeUsers">0</div>
+                <div class="stat-label">Active Users</div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <i class="bi bi-person-badge"></i>
+                </div>
+                <div class="stat-value" id="adminCount">0</div>
+                <div class="stat-label">Administrators</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="mb-3">
+            <input type="text" class="form-control" id="userSearch" placeholder="Search users by name or email...">
+          </div>
+
+          <!-- Users Table -->
+          <div class="card">
+            <div class="card-body">
+              <div id="usersTableContainer">
+                <div class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medications Tab -->
+        <div id="medicationsTab" class="tab-content" style="display: none;">
+          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Medication Catalog</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+              <button type="button" class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#medicationModal" id="addMedicationBtn">
+                <i class="bi bi-plus-circle me-1"></i>
+                Add Medication
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshMedicationsBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Search and Filter Bar -->
+          <div class="row mb-3">
+            <div class="col-md-8">
+              <input type="text" class="form-control" id="medicationSearch" placeholder="Search by name, generic name, or description...">
+            </div>
+            <div class="col-md-4">
+              <select class="form-select" id="medicationCategoryFilter">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Medications Table -->
+          <div class="card">
+            <div class="card-body">
+              <div id="medicationsTableContainer">
+                <div class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactions Tab -->
+        <div id="interactionsTab" class="tab-content" style="display: none;">
+          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Drug Interactions</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+              <button type="button" class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#interactionModal" id="addInteractionBtn">
+                <i class="bi bi-plus-circle me-1"></i>
+                Add Interaction
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshInteractionsBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Interactions Table -->
+          <div class="card">
+            <div class="card-body">
+              <div id="interactionsTableContainer">
+                <div class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit Logs Tab -->
+        <div id="auditTab" class="tab-content" style="display: none;">
+          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Audit Logs</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+              <button type="button" class="btn btn-sm btn-success me-2" id="exportAuditBtn">
+                <i class="bi bi-download me-1"></i>
+                Export CSV
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshAuditBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Panel -->
+          <div class="card mb-3">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-3">
+                  <label class="form-label">Action</label>
+                  <select class="form-select" id="filterAction">
+                    <option value="">All Actions</option>
+                    <option value="INSERT">INSERT</option>
+                    <option value="UPDATE">UPDATE</option>
+                    <option value="DELETE">DELETE</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Table</label>
+                  <input type="text" class="form-control" id="filterTable" placeholder="e.g., users">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">From Date</label>
+                  <input type="date" class="form-control" id="filterFromDate">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">To Date</label>
+                  <input type="date" class="form-control" id="filterToDate">
+                </div>
+              </div>
+              <div class="row mt-3">
+                <div class="col-md-12">
+                  <button class="btn btn-primary" id="applyFiltersBtn">
+                    <i class="bi bi-funnel me-1"></i>
+                    Apply Filters
+                  </button>
+                  <button class="btn btn-outline-secondary ms-2" id="clearFiltersBtn">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Clear
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audit Logs Table -->
+          <div class="card">
+            <div class="card-body">
+              <div id="auditLogsTableContainer">
+                <div class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div class="d-flex justify-content-center mt-3">
+            <nav>
+              <ul class="pagination" id="auditPagination">
+                <!-- Pagination will be rendered here -->
+              </ul>
+            </nav>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Medication Modal -->
+  <div class="modal fade" id="medicationModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="medicationModalTitle">
+            <i class="bi bi-capsule-pill me-2"></i>
+            Add Medication
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="medicationForm">
+            <input type="hidden" id="medicationId">
+            <div class="mb-3">
+              <label for="brandName" class="form-label">Brand Name</label>
+              <input type="text" class="form-control" id="brandName" required>
+            </div>
+            <div class="mb-3">
+              <label for="genericName" class="form-label">Generic Name</label>
+              <input type="text" class="form-control" id="genericName" required>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="dosageForm" class="form-label">Dosage Form</label>
+                <select class="form-select" id="dosageForm" required>
+                  <option value="">Select...</option>
+                  <option value="tablet">Tablet</option>
+                  <option value="capsule">Capsule</option>
+                  <option value="injection">Injection</option>
+                  <option value="inhaler">Inhaler</option>
+                  <option value="liquid">Liquid</option>
+                  <option value="cream">Cream</option>
+                  <option value="patch">Patch</option>
+                  <option value="drops">Drops</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="strength" class="form-label">Strength</label>
+                <input type="text" class="form-control" id="strength" placeholder="e.g. 500mg" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="manufacturer" class="form-label">Manufacturer</label>
+              <input type="text" class="form-control" id="manufacturer">
+            </div>
+            <div class="mb-3">
+              <label for="category" class="form-label">Category</label>
+              <input type="text" class="form-control" id="category">
+            </div>
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" id="description" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="sideEffects" class="form-label">Side Effects</label>
+              <textarea class="form-control" id="sideEffects" rows="2"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveMedicationBtn">
+            <i class="bi bi-check-circle me-1"></i>
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interaction Modal -->
+  <div class="modal fade" id="interactionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="interactionModalTitle">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Add Drug Interaction
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="interactionForm">
+            <input type="hidden" id="interactionId">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="medication1" class="form-label">Medication 1</label>
+                <input type="text" class="form-control" id="medication1Search" placeholder="Search medication..." autocomplete="off">
+                <input type="hidden" id="medication1">
+                <div class="list-group mt-1" id="medication1Results" style="display: none; position: absolute; z-index: 1000; max-height: 200px; overflow-y: auto;"></div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="medication2" class="form-label">Medication 2</label>
+                <input type="text" class="form-control" id="medication2Search" placeholder="Search medication..." autocomplete="off">
+                <input type="hidden" id="medication2">
+                <div class="list-group mt-1" id="medication2Results" style="display: none; position: absolute; z-index: 1000; max-height: 200px; overflow-y: auto;"></div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="severity" class="form-label">Severity</label>
+              <select class="form-select" id="severity" required>
+                <option value="">Select severity</option>
+                <option value="minor">Minor</option>
+                <option value="moderate">Moderate</option>
+                <option value="major">Major</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="interactionDescription" class="form-label">Description</label>
+              <textarea class="form-control" id="interactionDescription" rows="3" required></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveInteractionBtn">
+            <i class="bi bi-check-circle me-1"></i>
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Confirm Action
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p id="confirmMessage"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmButton">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Shared App JS -->
+  <script src="/js/app.js"></script>
+
+  <!-- Admin JS -->
+  <script src="/js/admin.js"></script>
+</body>
+</html>

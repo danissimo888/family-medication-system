@@ -17,6 +17,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const roleSelect = document.getElementById('role');
   const inviteCodeInput = document.getElementById('inviteCode');
   const agreeTermsCheckbox = document.getElementById('agreeTerms');
+
+  // Role-based family code validation
+  roleSelect.addEventListener('change', (e) => {
+    const inviteInput = document.getElementById('inviteCode');
+    const inviteLabel = document.getElementById('inviteCodeLabel');
+    const inviteHelp = document.getElementById('inviteCodeHelp');
+
+    if (e.target.value === 'caregiver') {
+      inviteInput.required = true;
+      inviteLabel.innerHTML = 'Family Invite Code <span class="text-danger">*</span>';
+      inviteHelp.textContent = 'Required: Get this code from a patient in your family';
+      inviteHelp.classList.remove('text-muted');
+      inviteHelp.classList.add('text-danger');
+    } else {
+      inviteInput.required = false;
+      inviteLabel.innerHTML = 'Family Invite Code <span class="text-muted">(Optional)</span>';
+      inviteHelp.textContent = 'Optional: Join an existing family account';
+      inviteHelp.classList.remove('text-danger');
+      inviteHelp.classList.add('text-muted');
+    }
+  });
   const registerButton = document.getElementById('registerButton');
   const errorAlert = document.getElementById('errorAlert');
   const errorMessage = document.getElementById('errorMessage');

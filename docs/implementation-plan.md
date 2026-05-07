@@ -243,96 +243,98 @@
 ## Phase 9 — Frontend: Patient Dashboard
 
 ### 9.1 Dashboard Layout
-- [ ] Create `public/pages/dashboard.html` — schedule panel, adherence stats, sidebar navigation
-- [ ] Create `public/js/dashboard.js` — fetch and render today's schedule
+- [x] Create `public/pages/dashboard.html` — schedule panel, adherence stats, sidebar navigation
+- [x] Create `public/js/dashboard.js` — fetch and render today's schedule
 
 ### 9.2 Medication Schedule View
-- [ ] Render schedule as a list with time, medication name, dosage, and status per slot
-- [ ] Add "Take" and "Skip" buttons per pending schedule slot
-- [ ] On click: call POST /api/administration-records, update UI without reload
+- [x] Render schedule as a list with time, medication name, dosage, and status per slot
+- [x] Add "Take" and "Skip" buttons per pending schedule slot
+- [x] On click: call POST /api/administration-records, update UI without reload
 
 ### 9.3 Adherence Display
-- [ ] Fetch 7-day and 30-day adherence from API
-- [ ] Render as progress bars or percentage badges
+- [x] Fetch 7-day and 30-day adherence from API
+- [x] Render as progress bars or percentage badges
 
 ### 9.4 Prescriptions Page
-- [ ] Create `public/pages/prescriptions.html` + `public/js/prescriptions.js`
-- [ ] List active prescriptions with drill-down to prescription items
+- [x] Create `public/pages/prescriptions.html` + `public/js/prescriptions.js`
+- [x] List active prescriptions with drill-down to prescription items
 
 ### 9.5 Allergies Page
-- [ ] Create `public/pages/allergies.html` + `public/js/allergies.js`
-- [ ] List allergies with add and remove functionality
+- [x] Create `public/pages/allergies.html` + `public/js/allergies.js`
+- [x] List allergies with add and remove functionality
 
 ### 9.6 Notifications
-- [ ] Implement notification bell in navbar: fetch unread count, dropdown list, mark-as-read on click
+- [x] Implement notification bell in navbar: fetch unread count, dropdown list, mark-as-read on click
 
 ### 9.7 Safety Warning UI
-- [ ] When API returns 409, show Bootstrap modal with warning details
-- [ ] Modal includes severity, description, and "Proceed Anyway" / "Cancel" buttons
+- [x] When API returns 409, show Bootstrap modal with warning details
+- [x] Modal includes severity, description, and "Proceed Anyway" / "Cancel" buttons
 
 ### 9.8 Testing
-- [ ] Test: view daily schedule, take a dose, verify UI updates
-- [ ] Test: view adherence stats
-- [ ] Test: add/remove allergies
-- [ ] Test: trigger a safety warning and verify modal appears
+- [x] Test: view daily schedule, take a dose, verify UI updates
+- [x] Test: view adherence stats
+- [x] Test: add/remove allergies
+- [x] Test: trigger a safety warning and verify modal appears
+- [x] **FIXED:** Schedule generation - wrapped response format in `{ schedules: [...] }`
 
 ---
 
 ## Phase 10 — Frontend: Caregiver Portal
 
 ### 10.1 Caregiver Layout
-- [ ] Create `public/pages/caregiver.html` + `public/js/caregiver.js`
-- [ ] Fetch family patients list, display as cards with name and adherence summary
+- [x] Create `public/pages/caregiver.html` + `public/js/caregiver.js`
+- [x] Fetch family patients list, display as cards with name and adherence summary
 
 ### 10.2 Patient Drill-Down
-- [ ] "View" button drills into patient's daily schedule (reuse schedule rendering logic)
-- [ ] Show patient's active prescriptions and allergy list
+- [x] "View" button drills into patient's daily schedule (reuse schedule rendering logic)
+- [x] Show patient's active prescriptions and allergy list
 
 ### 10.3 Caregiver Actions
-- [ ] "Log Dose" — caregiver can log a dose on behalf of a patient
-- [ ] "New Prescription" form with medication search — triggers safety checks
-- [ ] Safety warning modal for caregiver prescription creation
+- [x] "Log Dose" — caregiver can log a dose on behalf of a patient
+- [x] "New Prescription" form with medication search — triggers safety checks
+- [x] Safety warning modal for caregiver prescription creation
 
 ### 10.4 Caregiver Notes
-- [ ] Notes section: list existing notes for selected patient
-- [ ] Add new note form (date + content)
+- [x] Notes section: list existing notes for selected patient
+- [x] Add new note form (date + content)
+- [x] Edit/delete notes (only author can modify)
 
 ### 10.5 Testing
-- [ ] Test: caregiver views all family patients
-- [ ] Test: caregiver logs a dose for a patient
-- [ ] Test: caregiver adds a prescription with safety check triggered
-- [ ] Test: caregiver adds and views notes
+- [x] Test: caregiver views all family patients
+- [x] Test: caregiver logs a dose for a patient
+- [x] Test: caregiver adds a prescription with safety check triggered
+- [x] Test: caregiver adds and views notes
 
 ---
 
 ## Phase 11 — Frontend: Admin Panel
 
 ### 11.1 Admin Layout
-- [ ] Create `public/pages/admin.html` + `public/js/admin.js`
-- [ ] Tab-based layout with four tabs
+- [x] Create `public/pages/admin.html` + `public/js/admin.js`
+- [x] Tab-based layout with four tabs
 
 ### 11.2 User Management Tab
-- [ ] List users with role badges
-- [ ] Toggle active/inactive status
-- [ ] Change user role via dropdown
+- [x] List users with role badges
+- [x] Toggle active/inactive status
+- [x] Change user role via dropdown
 
 ### 11.3 Medication Catalog Tab
-- [ ] Table of medications with search
-- [ ] Add/edit medication via Bootstrap modal form
+- [x] Table of medications with search
+- [x] Add/edit medication via Bootstrap modal form
 
 ### 11.4 Drug Interactions Tab
-- [ ] Table of interaction pairs
-- [ ] Add interaction with medication pair dropdowns and severity select
+- [x] Table of interaction pairs
+- [x] Add interaction with medication pair dropdowns and severity select
 
 ### 11.5 Audit Logs Tab
-- [ ] Filterable table: date range picker, user filter, action filter
-- [ ] Paginated results
+- [x] Filterable table: date range picker, user filter, action filter
+- [x] Paginated results
 
 ### 11.6 Testing
-- [ ] Test: admin toggles user status
-- [ ] Test: admin adds a medication
-- [ ] Test: admin adds a drug interaction pair
-- [ ] Test: admin filters audit logs
+- [x] Test: admin toggles user status
+- [x] Test: admin adds a medication
+- [x] Test: admin adds a drug interaction pair
+- [x] Test: admin filters audit logs
 
 ---
 

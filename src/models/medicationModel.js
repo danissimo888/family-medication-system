@@ -1,9 +1,16 @@
 const { supabase } = require('../config/supabase');
 
-/**
- * Get all medications with optional search
- */
+// Simple in-memory cache for the medication list - it rarely changes
+const cache = { data: null, ts: 0 };
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Get all active medications, with optional name search
 async function findAll(searchTerm = null) {
+  // Return cached list when no search term and cache is fresh
+  if (!searchTerm && cache.data && Date.now() - cache.ts < CACHE_TTL) {
+    return cache.data;
+  }
+
   let query = supabase
     .from('medications')
     .select('*')
@@ -11,17 +18,23 @@ async function findAll(searchTerm = null) {
     .order('brand_name', { ascending: true });
 
   if (searchTerm) {
-    query = query.or(`brand_name.ilike.%${searchTerm}%,generic_name.ilike.%${searchTerm}%`);
+    // Strip special chars that could mess with the query pattern
+    const safe = searchTerm.replace(/[%_\\]/g, '\\$&').trim();
+    query = query.or(`brand_name.ilike.%${safe}%,generic_name.ilike.%${safe}%`);
   }
 
   const { data, error } = await query;
   if (error) throw error;
+
+  if (!searchTerm) {
+    cache.data = data;
+    cache.ts = Date.now();
+  }
+
   return data;
 }
 
-/**
- * Get medication by ID
- */
+// Get medication by ID
 async function findById(id) {
   const { data, error } = await supabase
     .from('medications')
@@ -33,9 +46,7 @@ async function findById(id) {
   return data;
 }
 
-/**
- * Create new medication (admin only)
- */
+// Create new medication (admin only)
 async function create(medicationData) {
   const { data, error } = await supabase
     .from('medications')
@@ -44,12 +55,15 @@ async function create(medicationData) {
     .single();
 
   if (error) throw error;
+
+  // Invalidate cache
+  cache.data = null;
+  cache.ts = 0;
+
   return data;
 }
 
-/**
- * Update medication (admin only)
- */
+// Update medication fields
 async function update(id, medicationData) {
   const { data, error } = await supabase
     .from('medications')
@@ -59,12 +73,15 @@ async function update(id, medicationData) {
     .single();
 
   if (error) throw error;
+
+  // Invalidate cache
+  cache.data = null;
+  cache.ts = 0;
+
   return data;
 }
 
-/**
- * Soft delete medication (admin only)
- */
+// Deactivate instead of hard delete so prescription history stays intact
 async function softDelete(id) {
   const { data, error } = await supabase
     .from('medications')
@@ -74,6 +91,11 @@ async function softDelete(id) {
     .single();
 
   if (error) throw error;
+
+  // Invalidate cache
+  cache.data = null;
+  cache.ts = 0;
+
   return data;
 }
 

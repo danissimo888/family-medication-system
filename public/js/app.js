@@ -31,12 +31,11 @@ function setAuthToken(token) {
   localStorage.setItem(AUTH_TOKEN_KEY, token);
 }
 
-/**
- * Clear the authentication token from localStorage
- */
 function clearAuthToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(USER_DATA_KEY);
+  localStorage.removeItem('patient_id');
+  sessionStorage.removeItem('patient_id');
 }
 
 /**
@@ -88,15 +87,18 @@ async function apiFetch(endpoint, options = {}) {
     const data = await response.json();
 
     if (!response.ok) {
-      // Handle specific error cases
+      // Attach status and data to error for better handling
+      const error = new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+      error.status = response.status;
+      error.data = data;
+
       if (response.status === 401) {
-        // Unauthorized - clear token and redirect to login
         clearAuthToken();
         if (!window.location.pathname.includes('login')) {
           window.location.href = '/pages/login.html';
         }
       }
-      throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw error;
     }
 
     return data;
@@ -110,15 +112,14 @@ async function apiFetch(endpoint, options = {}) {
 // Auth Check
 // ============================================
 
-/**
- * Check if user is authenticated by verifying token with server
- * @returns {Promise<object|null>} User data or null if not authenticated
- */
+// Check if user is authenticated. Uses cached data if token is still valid.
 async function checkAuth() {
   const token = getAuthToken();
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
+
+  // Use cached user data if available — avoids a round trip on every page load
+  const cached = getUserData();
+  if (cached) return cached;
 
   try {
     const userData = await apiFetch('/auth/me');
@@ -289,6 +290,21 @@ function formatTime(time) {
   return `${displayHour}:${minutes} ${ampm}`;
 }
 
+function formatFrequency(freq) {
+  const map = {
+    once_daily: 'Once a day',
+    twice_daily: 'Twice a day',
+    three_times_daily: 'Three times a day',
+    four_times_daily: 'Four times a day',
+    every_6_hours: 'Every 6 hours',
+    every_8_hours: 'Every 8 hours',
+    every_12_hours: 'Every 12 hours',
+    once_weekly: 'Once a week',
+    as_needed: 'As needed'
+  };
+  return map[freq] || freq;
+}
+
 /**
  * Show loading spinner on button
  * @param {HTMLElement} button - Button element
@@ -385,10 +401,12 @@ async function updateNavbar() {
         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
           <li><a class="dropdown-item" href="/pages/dashboard.html">Dashboard</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#" onclick="logout(); return false;">Logout</a></li>
+          <li><a class="dropdown-item" href="#" id="logoutBtn">Logout</a></li>
         </ul>
       </li>
     `;
+    const dynLogoutBtn = document.getElementById('logoutBtn');
+    if (dynLogoutBtn) dynLogoutBtn.addEventListener('click', (e) => { e.preventDefault(); logout(); });
   } else {
     // User is not logged in - show login/register buttons
     navbarNav.innerHTML = `
@@ -432,7 +450,99 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Update navbar based on auth state
   updateNavbar();
+
+  // Bind shared buttons (CSP-safe, no inline handlers)
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) logoutBtn.addEventListener('click', (e) => { e.preventDefault(); logout(); });
+
+  const refreshPageBtn = document.getElementById('refreshPageBtn');
+  if (refreshPageBtn) refreshPageBtn.addEventListener('click', () => location.reload());
 });
+
+// ============================================
+// Safety Warning Modal
+// ============================================
+
+/**
+ * Show safety warning modal for drug interactions/allergies
+ * @param {Array} warnings - Array of warning objects
+ * @param {Function} onProceed - Callback when user clicks "Proceed Anyway"
+ */
+function showSafetyWarningModal(warnings, onProceed) {
+  // Remove existing modal if any
+  const existingModal = document.getElementById('safetyWarningModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // Create modal HTML
+  const modalHtml = `
+    <div class="modal fade" id="safetyWarningModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              Safety Warning
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-warning">
+              <strong>Warning:</strong> Potential safety issues have been detected. Please review carefully before proceeding.
+            </div>
+            <div class="list-group">
+              ${warnings.map(warning => `
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="mb-0">${escapeHtml(warning.type || 'Safety Issue')}</h6>
+                    <span class="badge ${warning.severity === 'high' || warning.severity === 'major' ? 'bg-danger' : 'bg-warning text-dark'}">
+                      ${escapeHtml(warning.severity || 'moderate')}
+                    </span>
+                  </div>
+                  ${warning.medication_1 && warning.medication_2 ? `
+                    <p class="mb-1">
+                      <strong>Medications:</strong> ${escapeHtml(warning.medication_1)} + ${escapeHtml(warning.medication_2)}
+                    </p>
+                  ` : ''}
+                  <p class="mb-0 text-muted">${escapeHtml(warning.description || warning.message || 'No description available')}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" id="proceedAnywayBtn">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              Proceed Anyway
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Add modal to DOM
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  // Initialize Bootstrap modal
+  const modalElement = document.getElementById('safetyWarningModal');
+  const modal = new bootstrap.Modal(modalElement);
+
+  // Attach proceed handler
+  document.getElementById('proceedAnywayBtn').addEventListener('click', () => {
+    modal.hide();
+    if (onProceed) onProceed();
+  });
+
+  // Remove modal from DOM after it's hidden
+  modalElement.addEventListener('hidden.bs.modal', () => {
+    modalElement.remove();
+  });
+
+  // Show modal
+  modal.show();
+}
 
 // ============================================
 // Export functions for use in other scripts
@@ -457,6 +567,7 @@ window.MedFamily = {
   showToast,
   setButtonLoading,
   updateNavbar,
+  showSafetyWarningModal,
 
   // Utilities
   escapeHtml,
@@ -466,3 +577,99 @@ window.MedFamily = {
   checkPasswordStrength,
   updatePasswordStrength,
 };
+
+// ============================================
+// Progress Ring Helper
+// ============================================
+function renderProgressRing(percentage, size = 120) {
+  const radius = (size - 16) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+  
+  let colorClass = 'progress-ring-success';
+  if (percentage < 60) colorClass = 'progress-ring-danger';
+  else if (percentage < 80) colorClass = 'progress-ring-warning';
+  
+  return `
+    <div class="progress-ring ${colorClass}">
+      <svg width="${size}" height="${size}" class="progress-ring-circle">
+        <circle class="progress-ring-bg" cx="${size/2}" cy="${size/2}" r="${radius}"></circle>
+        <circle 
+          class="progress-ring-progress" 
+          cx="${size/2}" 
+          cy="${size/2}" 
+          r="${radius}"
+          stroke-dasharray="${circumference}"
+          stroke-dashoffset="${offset}"
+        ></circle>
+      </svg>
+      <div class="progress-ring-text">${Math.round(percentage)}%</div>
+    </div>
+  `;
+}
+
+// ============================================
+// Count Up Animation
+// ============================================
+function animateCountUp(element, start, end, duration = 1000) {
+  const range = end - start;
+  const increment = range / (duration / 16);
+  let current = start;
+  
+  const timer = setInterval(() => {
+    current += increment;
+    if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+      current = end;
+      clearInterval(timer);
+    }
+    element.textContent = Math.round(current);
+  }, 16);
+}
+
+// ============================================
+// Skeleton Loader Helper
+// ============================================
+function renderSkeleton(type = 'card') {
+  const skeletons = {
+    card: '<div class="skeleton skeleton-card"></div>',
+    text: '<div class="skeleton skeleton-text"></div>',
+    title: '<div class="skeleton skeleton-title"></div>',
+    avatar: '<div class="skeleton skeleton-avatar"></div>'
+  };
+  return skeletons[type] || skeletons.card;
+}
+
+// ============================================
+// Scroll Animation Observer
+// ============================================
+function initScrollAnimations() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('animate-slide-up');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  
+  document.querySelectorAll('.feature-icon, .step-badge, .stat-card').forEach(el => {
+    observer.observe(el);
+  });
+}
+
+// Initialize scroll animations on load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initScrollAnimations);
+} else {
+  initScrollAnimations();
+}
+
+// Export new helpers
+window.MedFamily = {
+  ...window.MedFamily,
+  renderProgressRing,
+  animateCountUp,
+  renderSkeleton,
+  initScrollAnimations
+};
+

@@ -38,18 +38,20 @@ async function getById(req, res) {
  */
 async function create(req, res) {
   try {
-    const { name, generic_name, description, common_dosages, side_effects } = req.body;
+    const { brand_name, generic_name, category, description, dosage_form, strength, manufacturer, side_effects } = req.body;
 
-    // Validation
-    if (!name || !generic_name) {
-      return res.status(400).json({ error: 'Name and generic name are required' });
+    if (!brand_name || !generic_name || !dosage_form || !strength) {
+      return res.status(400).json({ error: 'Brand name, generic name, dosage form, and strength are required' });
     }
 
     const medicationData = {
-      name,
+      brand_name,
       generic_name,
+      category,
+      dosage_form,
+      strength,
+      manufacturer,
       description,
-      common_dosages,
       side_effects,
       is_active: true
     };
@@ -68,13 +70,16 @@ async function create(req, res) {
 async function update(req, res) {
   try {
     const { id } = req.params;
-    const { name, generic_name, description, common_dosages, side_effects } = req.body;
+    const { brand_name, generic_name, category, dosage_form, strength, manufacturer, description, side_effects } = req.body;
 
     const medicationData = {
-      name,
+      brand_name,
       generic_name,
+      category,
+      dosage_form,
+      strength,
+      manufacturer,
       description,
-      common_dosages,
       side_effects
     };
 

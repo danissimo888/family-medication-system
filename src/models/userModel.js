@@ -1,8 +1,6 @@
 const { supabase } = require('../config/supabase');
 
-/**
- * Find a user by email address, joined with their role name.
- */
+// Look up user by email, joined with role name
 async function findByEmail(email) {
   const { data, error } = await supabase
     .from('users')
@@ -14,9 +12,7 @@ async function findByEmail(email) {
   return data || null;
 }
 
-/**
- * Find a user by ID, joined with their role name.
- */
+// Look up user by ID, joined with role name
 async function findById(id) {
   const { data, error } = await supabase
     .from('users')
@@ -28,10 +24,7 @@ async function findById(id) {
   return data || null;
 }
 
-/**
- * Create a new user row.
- * @param {Object} userData - { role_id, family_id, email, password_hash, first_name, last_name, phone }
- */
+// Insert a new user row
 async function create(userData) {
   const { data, error } = await supabase
     .from('users')
@@ -43,9 +36,7 @@ async function create(userData) {
   return data;
 }
 
-/**
- * Update last_login timestamp for a user.
- */
+// Stamp last_login so we know when the user was last active
 async function updateLastLogin(id) {
   const { error } = await supabase
     .from('users')
@@ -55,9 +46,7 @@ async function updateLastLogin(id) {
   if (error) throw error;
 }
 
-/**
- * Look up a role by name and return its id.
- */
+// Get role ID by name (e.g. 'patient', 'caregiver', 'admin')
 async function findRoleByName(roleName) {
   const { data, error } = await supabase
     .from('roles')
@@ -69,10 +58,51 @@ async function findRoleByName(roleName) {
   return data || null;
 }
 
+// Paginated user list for admin panel
+async function findAll(limit = 50, offset = 0) {
+  const { data, error, count } = await supabase
+    .from('users')
+    .select('*, roles(name), families!users_family_id_fkey(name)', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) throw error;
+  return { users: data || [], total: count || 0 };
+}
+
+// Enable or disable a user account
+async function updateStatus(id, is_active) {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ is_active, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*, roles(name)')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// Change a user's role
+async function updateRole(id, role_id) {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ role_id, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*, roles(name)')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 module.exports = {
   findByEmail,
   findById,
   create,
   updateLastLogin,
   findRoleByName,
+  findAll,
+  updateStatus,
+  updateRole,
 };

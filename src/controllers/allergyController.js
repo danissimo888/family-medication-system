@@ -1,9 +1,8 @@
 const allergyModel = require('../models/allergyModel');
 const patientModel = require('../models/patientModel');
+const { canAccessFamily } = require('../middleware/familyBoundary');
 
-/**
- * GET /api/patients/:patientId/allergies - Get all allergies for a patient
- */
+// GET /api/patients/:patientId/allergies
 async function getPatientAllergies(req, res) {
   try {
     const { patientId } = req.params;
@@ -15,20 +14,21 @@ async function getPatientAllergies(req, res) {
     }
 
     if (patient.family_id !== req.user.family_id) {
-      return res.status(403).json({ error: 'Access denied: patient not in your family' });
+      const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied: patient not in your family' });
+      }
     }
 
     const allergies = await allergyModel.findByPatient(patientId);
     res.json(allergies);
   } catch (error) {
     console.error('Error fetching allergies:', error);
-    res.status(500).json({ error: 'Failed to fetch allergies', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch allergies' });
   }
 }
 
-/**
- * GET /api/allergies/:id - Get single allergy by ID
- */
+// GET /api/allergies/:id
 async function getById(req, res) {
   try {
     const { id } = req.params;
@@ -41,7 +41,10 @@ async function getById(req, res) {
     // Verify allergy belongs to user's family
     const patient = await patientModel.findById(allergy.patient_id);
     if (patient.family_id !== req.user.family_id) {
-      return res.status(403).json({ error: 'Access denied: allergy not in your family' });
+      const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied: allergy not in your family' });
+      }
     }
 
     res.json(allergy);
@@ -51,13 +54,11 @@ async function getById(req, res) {
   }
 }
 
-/**
- * POST /api/patients/:patientId/allergies - Create new allergy
- */
+// POST /api/patients/:patientId/allergies
 async function create(req, res) {
   try {
     const { patientId } = req.params;
-    const { medication_id, allergen_name, severity, reaction } = req.body;
+    const { medication_id, allergen_name, severity, reaction, notes } = req.body;
 
     // Validation
     if (!allergen_name || !severity) {
@@ -73,7 +74,10 @@ async function create(req, res) {
     }
 
     if (patient.family_id !== req.user.family_id) {
-      return res.status(403).json({ error: 'Access denied: patient not in your family' });
+      const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied: patient not in your family' });
+      }
     }
 
     const allergyData = {
@@ -81,7 +85,8 @@ async function create(req, res) {
       allergen_name,
       severity,
       reaction: reaction || null,
-      medication_id: medication_id || null
+      medication_id: medication_id || null,
+      notes: notes || null
     };
 
     const allergy = await allergyModel.create(allergyData);
@@ -92,9 +97,7 @@ async function create(req, res) {
   }
 }
 
-/**
- * PUT /api/allergies/:id - Update allergy
- */
+// PUT /api/allergies/:id
 async function update(req, res) {
   try {
     const { id } = req.params;
@@ -108,7 +111,10 @@ async function update(req, res) {
 
     const patient = await patientModel.findById(existing.patient_id);
     if (patient.family_id !== req.user.family_id) {
-      return res.status(403).json({ error: 'Access denied: allergy not in your family' });
+      const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied: allergy not in your family' });
+      }
     }
 
     const updateData = {};
@@ -123,9 +129,7 @@ async function update(req, res) {
   }
 }
 
-/**
- * DELETE /api/allergies/:id - Delete allergy
- */
+// DELETE /api/allergies/:id
 async function remove(req, res) {
   try {
     const { id } = req.params;
@@ -138,7 +142,10 @@ async function remove(req, res) {
 
     const patient = await patientModel.findById(existing.patient_id);
     if (patient.family_id !== req.user.family_id) {
-      return res.status(403).json({ error: 'Access denied: allergy not in your family' });
+      const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied: allergy not in your family' });
+      }
     }
 
     await allergyModel.remove(id);

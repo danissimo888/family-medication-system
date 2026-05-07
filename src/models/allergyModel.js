@@ -1,8 +1,6 @@
 const { supabase } = require('../config/supabase');
 
-/**
- * Find all allergies for a patient
- */
+// Get all allergies for a patient, newest first
 async function findByPatient(patientId) {
   const { data, error } = await supabase
     .from('patient_allergies')
@@ -13,6 +11,7 @@ async function findByPatient(patientId) {
       medication_id,
       severity,
       reaction,
+      notes,
       created_at,
       medication:medications (
         id,
@@ -27,9 +26,7 @@ async function findByPatient(patientId) {
   return data;
 }
 
-/**
- * Find allergy by ID
- */
+// Get single allergy by ID
 async function findById(id) {
   const { data, error } = await supabase
     .from('patient_allergies')
@@ -40,6 +37,7 @@ async function findById(id) {
       medication_id,
       severity,
       reaction,
+      notes,
       created_at,
       medication:medications (
         id,
@@ -57,9 +55,7 @@ async function findById(id) {
   return data;
 }
 
-/**
- * Create new allergy record
- */
+// Add a new allergy record
 async function create(allergyData) {
   const { data, error } = await supabase
     .from('patient_allergies')
@@ -71,6 +67,7 @@ async function create(allergyData) {
       medication_id,
       severity,
       reaction,
+      notes,
       created_at,
       medication:medications (
         id,
@@ -84,9 +81,7 @@ async function create(allergyData) {
   return data;
 }
 
-/**
- * Update allergy record
- */
+// Update an existing allergy record
 async function update(id, allergyData) {
   const { data, error } = await supabase
     .from('patient_allergies')
@@ -99,6 +94,7 @@ async function update(id, allergyData) {
       medication_id,
       severity,
       reaction,
+      notes,
       created_at,
       medication:medications (
         id,
@@ -112,9 +108,7 @@ async function update(id, allergyData) {
   return data;
 }
 
-/**
- * Delete allergy record
- */
+// Delete an allergy record
 async function remove(id) {
   const { error } = await supabase
     .from('patient_allergies')
@@ -125,9 +119,7 @@ async function remove(id) {
   return true;
 }
 
-/**
- * Check if patient has allergy to specific medications
- */
+// Used by safetyService to check if a patient is allergic to any of the given meds
 async function checkAllergies(patientId, medicationIds) {
   const { data, error } = await supabase
     .from('patient_allergies')

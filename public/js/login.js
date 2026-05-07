@@ -3,10 +3,8 @@
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Check if user is already logged in
   checkExistingAuth();
 
-  // Get form elements
   const loginForm = document.getElementById('loginForm');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
@@ -15,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorMessage = document.getElementById('errorMessage');
   const togglePasswordBtn = document.getElementById('togglePassword');
   const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+  let countdownInterval = null;
 
   // Toggle password visibility
   togglePasswordBtn.addEventListener('click', () => {
@@ -80,18 +80,25 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Login error:', error);
 
-      // Show error message
-      let errorText = 'An error occurred during login. Please try again.';
+      const data = error.data || {};
 
-      if (error.message.includes('Invalid email or password')) {
-        errorText = 'Invalid email or password. Please check your credentials and try again.';
+      if (data.locked) {
+        showLockoutCountdown(data.seconds_remaining, data.locked_until);
+      } else if (error.message.includes('Invalid email or password')) {
+        let errorText = 'Invalid email or password.';
+        if (data.attempts_remaining !== undefined) {
+          const r = data.attempts_remaining;
+          errorText += ` ${r} attempt${r === 1 ? '' : 's'} remaining before lockout.`;
+        }
+        showError(errorText);
       } else if (error.message.includes('deactivated')) {
-        errorText = 'Your account has been deactivated. Please contact an administrator.';
+        showError('Your account has been deactivated. Please contact an administrator.');
       } else if (error.message.includes('network') || error.message.includes('fetch')) {
-        errorText = 'Network error. Please check your internet connection and try again.';
+        showError('Network error. Please check your internet connection and try again.');
+      } else {
+        showError('An error occurred during login. Please try again.');
       }
 
-      showError(errorText);
       MedFamily.setButtonLoading(loginButton, false);
     }
   });
@@ -117,17 +124,46 @@ document.addEventListener('DOMContentLoaded', () => {
     hideError();
   });
 
-  // Helper function to show error
   function showError(message) {
     errorMessage.textContent = message;
     errorAlert.classList.remove('d-none');
     errorAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  // Helper function to hide error
   function hideError() {
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+    loginButton.disabled = false;
     errorAlert.classList.add('d-none');
     errorMessage.textContent = '';
+  }
+
+  function showLockoutCountdown(secondsRemaining, lockedUntil) {
+    loginButton.disabled = true;
+    const until = new Date(lockedUntil).getTime();
+
+    function tick() {
+      const secs = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+      const mins = Math.floor(secs / 60);
+      const s = secs % 60;
+      const timeStr = mins + ':' + String(s).padStart(2, '0');
+
+      errorMessage.textContent =
+        'Account temporarily locked. Too many failed attempts. Try again in ' + timeStr + '.';
+      errorAlert.classList.remove('d-none');
+
+      if (secs <= 0) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        loginButton.disabled = false;
+        errorMessage.textContent = 'Account unlocked. You may try again.';
+      }
+    }
+
+    tick();
+    countdownInterval = setInterval(tick, 1000);
   }
 
   // Check if user is already logged in

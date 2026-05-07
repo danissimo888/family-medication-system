@@ -1,4 +1,14 @@
 const noteModel = require('../models/noteModel');
+const patientModel = require('../models/patientModel');
+const { canAccessFamily } = require('../middleware/familyBoundary');
+
+async function resolvePatientFamilyId(req, patientId) {
+  const patient = await patientModel.findById(patientId);
+  if (!patient) return null;
+  if (patient.family_id === req.user.family_id) return patient.family_id;
+  const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+  return hasAccess ? patient.family_id : null;
+}
 
 /**
  * GET /api/patients/:pid/notes
@@ -7,7 +17,10 @@ const noteModel = require('../models/noteModel');
 async function list(req, res) {
   try {
     const { pid } = req.params;
-    const familyId = req.user.family_id;
+    const familyId = await resolvePatientFamilyId(req, pid);
+    if (!familyId) {
+      return res.status(403).json({ error: 'Access denied: patient not in your family' });
+    }
 
     const notes = await noteModel.findByPatientId(pid, familyId);
 
@@ -28,7 +41,11 @@ async function list(req, res) {
 async function getById(req, res) {
   try {
     const { id } = req.params;
-    const familyId = req.user.family_id;
+    const { pid } = req.params;
+    const familyId = await resolvePatientFamilyId(req, pid);
+    if (!familyId) {
+      return res.status(403).json({ error: 'Access denied: patient not in your family' });
+    }
 
     const note = await noteModel.findById(id, familyId);
 
@@ -51,7 +68,10 @@ async function create(req, res) {
     const { pid } = req.params;
     const { note_date, content } = req.body;
     const caregiverId = req.user.user_id;
-    const familyId = req.user.family_id;
+    const familyId = await resolvePatientFamilyId(req, pid);
+    if (!familyId) {
+      return res.status(403).json({ error: 'Access denied: patient not in your family' });
+    }
 
     // Validate required fields
     if (!note_date || !content) {
@@ -91,7 +111,11 @@ async function update(req, res) {
     const { id } = req.params;
     const { note_date, content } = req.body;
     const caregiverId = req.user.user_id;
-    const familyId = req.user.family_id;
+    const { pid } = req.params;
+    const familyId = await resolvePatientFamilyId(req, pid);
+    if (!familyId) {
+      return res.status(403).json({ error: 'Access denied: patient not in your family' });
+    }
 
     // Validate required fields
     if (!note_date || !content) {
@@ -123,7 +147,11 @@ async function deleteNote(req, res) {
   try {
     const { id } = req.params;
     const caregiverId = req.user.user_id;
-    const familyId = req.user.family_id;
+    const { pid } = req.params;
+    const familyId = await resolvePatientFamilyId(req, pid);
+    if (!familyId) {
+      return res.status(403).json({ error: 'Access denied: patient not in your family' });
+    }
 
     await noteModel.deleteNote(id, caregiverId, familyId);
 

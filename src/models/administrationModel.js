@@ -31,7 +31,7 @@ async function findByScheduleId(scheduleId) {
 /**
  * Get administration history for a patient.
  */
-async function findByPatient(patientId) {
+async function findByPatient(patientId, limit = 100, offset = 0) {
   const { data, error } = await supabase
     .from('administration_records')
     .select(`
@@ -61,7 +61,8 @@ async function findByPatient(patientId) {
       )
     `)
     .eq('medication_schedules.patient_id', patientId)
-    .order('administered_at', { ascending: false });
+    .order('administered_at', { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) throw error;
   return data || [];

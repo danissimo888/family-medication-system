@@ -1,5 +1,6 @@
 const familyModel = require('../models/familyModel');
 const { supabase } = require('../config/supabase');
+const jwt = require('jsonwebtoken');
 
 /**
  * POST /api/families
@@ -48,7 +49,19 @@ async function getFamily(req, res) {
     }
 
     // Verify the requesting user belongs to this family
-    if (req.user.family_id !== id && req.user.role !== 'admin') {
+    let hasAccess = req.user.role === 'admin' || req.user.family_id === id;
+
+    if (!hasAccess && req.user.role === 'caregiver') {
+      const { data: membership } = await supabase
+        .from('caregiver_families')
+        .select('id')
+        .eq('user_id', req.user.user_id)
+        .eq('family_id', id)
+        .maybeSingle();
+      hasAccess = !!membership;
+    }
+
+    if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied. You are not a member of this family.' });
     }
 
@@ -105,7 +118,8 @@ async function updateFamily(req, res) {
 /**
  * POST /api/families/join
  * Join a family using an invite code.
- * Body: { invite_code }
+ * Caregivers: adds to caregiver_families junction table (multi-family).
+ * Patients: sets users.family_id directly (single family).
  */
 async function joinFamily(req, res) {
   try {
@@ -120,39 +134,193 @@ async function joinFamily(req, res) {
       return res.status(404).json({ error: 'Invalid invite code. Family not found.' });
     }
 
-    // Check if user already belongs to a family
-    if (req.user.family_id) {
-      return res.status(409).json({ error: 'You already belong to a family. Leave your current family first.' });
-    }
+    if (req.user.role === 'caregiver') {
+      const { data: existing } = await supabase
+        .from('caregiver_families')
+        .select('id')
+        .eq('user_id', req.user.user_id)
+        .eq('family_id', family.id)
+        .maybeSingle();
 
-    // Update the user's family_id
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ family_id: family.id, updated_at: new Date().toISOString() })
-      .eq('id', req.user.user_id);
+      if (existing) {
+        return res.status(409).json({ error: 'You are already a member of this family.' });
+      }
 
-    if (updateError) throw updateError;
+      const { error: junctionError } = await supabase
+        .from('caregiver_families')
+        .insert({ user_id: req.user.user_id, family_id: family.id });
 
-    // If user is a patient, also update their patient record's family_id
-    if (req.user.role === 'patient') {
-      const { error: patientError } = await supabase
-        .from('patients')
+      if (junctionError) throw junctionError;
+
+      if (!req.user.family_id) {
+        await supabase
+          .from('users')
+          .update({ family_id: family.id, updated_at: new Date().toISOString() })
+          .eq('id', req.user.user_id);
+      }
+    } else {
+      const { error: updateError } = await supabase
+        .from('users')
         .update({ family_id: family.id, updated_at: new Date().toISOString() })
-        .eq('user_id', req.user.user_id);
+        .eq('id', req.user.user_id);
 
-      // Ignore error if patient row doesn't exist yet
-      if (patientError && patientError.code !== 'PGRST116') throw patientError;
+      if (updateError) throw updateError;
+
+      if (req.user.role === 'patient') {
+        const { error: patientError } = await supabase
+          .from('patients')
+          .update({ family_id: family.id, updated_at: new Date().toISOString() })
+          .eq('user_id', req.user.user_id);
+
+        if (patientError && patientError.code !== 'PGRST116') throw patientError;
+      }
     }
+
+    const primaryFamilyId = req.user.family_id || family.id;
+    const token = jwt.sign(
+      { user_id: req.user.user_id, role: req.user.role, family_id: primaryFamilyId },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
 
     res.json({
       message: 'Successfully joined family.',
-      family: {
-        id: family.id,
-        name: family.name,
-      },
+      token,
+      family: { id: family.id, name: family.name },
     });
   } catch (err) {
     console.error('Join family error:', err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+}
+
+/**
+ * GET /api/families/my-code
+ * Get family code for current user (patients only).
+ */
+async function getMyFamilyCode(req, res) {
+  try {
+    if (req.user.role !== 'patient') {
+      return res.status(403).json({ error: 'Only patients can generate family codes.' });
+    }
+
+    const family_id = req.user.family_id;
+
+    if (!family_id) {
+      return res.status(400).json({
+        error: 'No family found. Please contact support.'
+      });
+    }
+
+    const family = await familyModel.findById(family_id);
+
+    if (!family) {
+      return res.status(404).json({ error: 'Family not found.' });
+    }
+
+    res.json({
+      family_id: family.id,
+      name: family.name,
+      invite_code: family.invite_code,
+    });
+  } catch (err) {
+    console.error('Get my family code error:', err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+}
+
+/**
+ * POST /api/families/leave
+ * Leave a specific family (caregivers only).
+ * Body: { family_id } — required, specifies which family to leave.
+ */
+async function leaveFamily(req, res) {
+  try {
+    if (req.user.role !== 'caregiver') {
+      return res.status(403).json({ error: 'Only caregivers can leave families.' });
+    }
+
+    const { family_id } = req.body;
+    if (!family_id) {
+      return res.status(400).json({ error: 'family_id is required.' });
+    }
+
+    const { data: membership } = await supabase
+      .from('caregiver_families')
+      .select('id')
+      .eq('user_id', req.user.user_id)
+      .eq('family_id', family_id)
+      .maybeSingle();
+
+    if (!membership) {
+      return res.status(400).json({ error: 'You are not a member of this family.' });
+    }
+
+    const { error: deleteError } = await supabase
+      .from('caregiver_families')
+      .delete()
+      .eq('user_id', req.user.user_id)
+      .eq('family_id', family_id);
+
+    if (deleteError) throw deleteError;
+
+    let newPrimaryFamilyId = req.user.family_id;
+    if (req.user.family_id === family_id) {
+      const { data: remaining } = await supabase
+        .from('caregiver_families')
+        .select('family_id')
+        .eq('user_id', req.user.user_id)
+        .limit(1);
+
+      newPrimaryFamilyId = (remaining && remaining.length > 0) ? remaining[0].family_id : null;
+
+      await supabase
+        .from('users')
+        .update({ family_id: newPrimaryFamilyId, updated_at: new Date().toISOString() })
+        .eq('id', req.user.user_id);
+    }
+
+    const token = jwt.sign(
+      { user_id: req.user.user_id, role: req.user.role, family_id: newPrimaryFamilyId },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({ message: 'Successfully left family.', token });
+  } catch (err) {
+    console.error('Leave family error:', err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+}
+
+/**
+ * GET /api/families/my-families
+ * Returns all families the caregiver belongs to (via junction table).
+ */
+async function getMyCaregiverFamilies(req, res) {
+  try {
+    if (req.user.role !== 'caregiver') {
+      return res.status(403).json({ error: 'Only caregivers can access this endpoint.' });
+    }
+
+    const { data, error } = await supabase
+      .from('caregiver_families')
+      .select('family_id, joined_at, families(id, name, invite_code)')
+      .eq('user_id', req.user.user_id)
+      .order('joined_at', { ascending: true });
+
+    if (error) throw error;
+
+    const families = (data || []).map(row => ({
+      id: row.families.id,
+      name: row.families.name,
+      invite_code: row.families.invite_code,
+      joined_at: row.joined_at,
+    }));
+
+    res.json(families);
+  } catch (err) {
+    console.error('Get caregiver families error:', err);
     res.status(500).json({ error: 'Internal server error.' });
   }
 }
@@ -162,4 +330,7 @@ module.exports = {
   getFamily,
   updateFamily,
   joinFamily,
+  getMyFamilyCode,
+  leaveFamily,
+  getMyCaregiverFamilies,
 };

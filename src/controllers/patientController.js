@@ -1,29 +1,31 @@
 const patientModel = require('../models/patientModel');
+const { supabase } = require('../config/supabase');
 
-/**
- * Helper: check if the requesting user can access this patient.
- * Returns the patient record or null.
- */
+// Returns the patient if the current user is allowed to see them, null otherwise
 async function authorizePatientAccess(req, patientId) {
   const patient = await patientModel.findById(patientId);
   if (!patient) return null;
 
-  // Admin can access any patient
   if (req.user.role === 'admin') return patient;
 
-  // Patient can access only their own profile
   if (req.user.role === 'patient' && patient.user_id === req.user.user_id) return patient;
 
-  // Caregiver can access patients in their family
-  if (req.user.role === 'caregiver' && patient.family_id === req.user.family_id) return patient;
+  if (req.user.role === 'caregiver') {
+    if (patient.family_id === req.user.family_id) return patient;
+
+    const { data: membership } = await supabase
+      .from('caregiver_families')
+      .select('id')
+      .eq('user_id', req.user.user_id)
+      .eq('family_id', patient.family_id)
+      .maybeSingle();
+    if (membership) return patient;
+  }
 
   return null;
 }
 
-/**
- * GET /api/patients/:id
- * Get patient profile.
- */
+// GET /api/patients/:id
 async function getPatient(req, res) {
   try {
     const patient = await authorizePatientAccess(req, req.params.id);
@@ -38,11 +40,7 @@ async function getPatient(req, res) {
   }
 }
 
-/**
- * PUT /api/patients/:id
- * Update patient profile.
- * Body: { date_of_birth?, gender?, blood_type?, emergency_contact?, notes? }
- */
+// PUT /api/patients/:id - update profile fields
 async function updatePatient(req, res) {
   try {
     const patient = await authorizePatientAccess(req, req.params.id);
@@ -70,19 +68,23 @@ async function updatePatient(req, res) {
   }
 }
 
-/**
- * GET /api/patients/me
- * Get the current user's patient profile (convenience endpoint).
- */
+// GET /api/patients/me - shortcut for patients to get their own profile
 async function getMyPatientProfile(req, res) {
   try {
     if (req.user.role !== 'patient') {
       return res.status(403).json({ error: 'Only patients have a patient profile.' });
     }
 
-    const patient = await patientModel.findByUserId(req.user.user_id);
+    let patient = await patientModel.findByUserId(req.user.user_id);
+
     if (!patient) {
-      return res.status(404).json({ error: 'Patient profile not found. Please complete your profile.' });
+      patient = await patientModel.create({
+        user_id: req.user.user_id,
+        family_id: req.user.family_id,
+        date_of_birth: '2000-01-01',
+        gender: null,
+        blood_type: null,
+      });
     }
 
     res.json(patient);
@@ -92,17 +94,30 @@ async function getMyPatientProfile(req, res) {
   }
 }
 
-/**
- * GET /api/patients/family
- * Get all patients in the current user's family (for caregivers).
- */
+// GET /api/patients/family - caregivers use this to see all patients in their family
+// Accepts optional ?family_id= query param for multi-family caregivers
 async function getFamilyPatients(req, res) {
   try {
-    if (!req.user.family_id) {
+    const requestedFamilyId = req.query.family_id || req.user.family_id;
+
+    if (!requestedFamilyId) {
       return res.status(400).json({ error: 'You are not a member of any family.' });
     }
 
-    const patients = await patientModel.findByFamilyId(req.user.family_id);
+    if (req.user.role === 'caregiver' && requestedFamilyId !== req.user.family_id) {
+      const { data: membership } = await supabase
+        .from('caregiver_families')
+        .select('id')
+        .eq('user_id', req.user.user_id)
+        .eq('family_id', requestedFamilyId)
+        .maybeSingle();
+
+      if (!membership) {
+        return res.status(403).json({ error: 'Access denied. You are not a member of this family.' });
+      }
+    }
+
+    const patients = await patientModel.findByFamilyId(requestedFamilyId);
     res.json(patients);
   } catch (err) {
     console.error('Get family patients error:', err);

@@ -115,7 +115,8 @@ async function findByRecord(tableName, recordId) {
     `)
     .eq('table_name', tableName)
     .eq('record_id', recordId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(0, 99);
 
   if (error) throw error;
   return data;
@@ -131,7 +132,7 @@ async function getStatistics(filters = {}) {
 
   let query = supabase
     .from('audit_logs')
-    .select('action, table_name');
+    .select('action, table_name', { count: 'exact' });
 
   if (start_date) {
     query = query.gte('created_at', start_date);
@@ -141,22 +142,20 @@ async function getStatistics(filters = {}) {
     query = query.lte('created_at', end_date);
   }
 
-  const { data, error } = await query;
+  query = query.range(0, 9999);
+
+  const { data, error, count } = await query;
 
   if (error) throw error;
 
-  // Calculate statistics
   const stats = {
-    total: data.length,
+    total: count || 0,
     by_action: {},
     by_table: {}
   };
 
-  data.forEach(log => {
-    // Count by action
+  (data || []).forEach(log => {
     stats.by_action[log.action] = (stats.by_action[log.action] || 0) + 1;
-
-    // Count by table
     stats.by_table[log.table_name] = (stats.by_table[log.table_name] || 0) + 1;
   });
 

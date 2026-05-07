@@ -3,23 +3,18 @@ const router = express.Router();
 const prescriptionController = require('../controllers/prescriptionController');
 const authMiddleware = require('../middleware/auth');
 const requireRole = require('../middleware/role');
+const { validatePrescriptionInput, validateUUIDParam } = require('../middleware/validation');
 
-// All routes require authentication
 router.use(authMiddleware);
 
-// Create prescription (caregiver or admin)
-router.post('/', requireRole('caregiver', 'admin'), prescriptionController.create);
+router.post('/', requireRole('patient', 'caregiver', 'admin'), validatePrescriptionInput, prescriptionController.create);
 
-// Get patient prescriptions
-router.get('/patient/:patientId', prescriptionController.getPatientPrescriptions);
+router.get('/patient/:patientId', validateUUIDParam('patientId'), prescriptionController.getPatientPrescriptions);
 
-// Get single prescription with items
-router.get('/:id', prescriptionController.getById);
+router.get('/:id', validateUUIDParam('id'), prescriptionController.getById);
 
-// Update prescription
-router.put('/:id', requireRole('caregiver', 'admin'), prescriptionController.update);
+router.put('/:id', requireRole('caregiver', 'admin'), validateUUIDParam('id'), prescriptionController.update);
 
-// Cancel prescription
-router.put('/:id/cancel', requireRole('caregiver', 'admin'), prescriptionController.cancel);
+router.put('/:id/cancel', requireRole('patient', 'caregiver', 'admin'), validateUUIDParam('id'), prescriptionController.cancel);
 
 module.exports = router;

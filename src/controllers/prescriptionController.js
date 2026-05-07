@@ -2,32 +2,41 @@ const prescriptionModel = require('../models/prescriptionModel');
 const patientModel = require('../models/patientModel');
 const scheduleService = require('../services/scheduleService');
 const safetyService = require('../services/safetyService');
+const scheduleModel = require('../models/scheduleModel');
+const { canAccessFamily } = require('../middleware/familyBoundary');
 
-/**
- * POST /api/prescriptions - Create new prescription with items
- */
+// POST /api/prescriptions - create prescription with items
+// Patients can create for themselves; caregivers/admins can create for any family member
 async function create(req, res) {
   try {
-    const { patient_id, prescribed_by, start_date, end_date, notes, items, override_warnings } = req.body;
+    let { patient_id, prescribed_by, start_date, end_date, notes, items, override_warnings } = req.body;
 
-    // Validation
+    // Patients can only create prescriptions for themselves
+    if (req.user.role === 'patient') {
+      const self = await patientModel.findByUserId(req.user.user_id);
+      if (!self) return res.status(404).json({ error: 'Patient profile not found.' });
+      patient_id = self.id;
+      prescribed_by = prescribed_by || 'Self';
+    }
+
     if (!patient_id || !prescribed_by || !start_date || !items || items.length === 0) {
       return res.status(400).json({
         error: 'Patient ID, prescribed by, start date, and at least one item are required'
       });
     }
 
-    // Verify patient exists and belongs to user's family
+    // Make sure the patient belongs to the same family
     const patient = await patientModel.findById(patient_id);
     if (!patient) {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
     if (patient.family_id !== req.user.family_id) {
-      return res.status(403).json({ error: 'Access denied: patient not in your family' });
+      const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied: patient not in your family' });
+      }
     }
-
-    // Extract medication IDs from items
     const medicationIds = items.map(item => item.medication_id);
 
     // Run safety checks
@@ -58,8 +67,15 @@ async function create(req, res) {
     const prescription = await prescriptionModel.create(prescriptionData, items);
 
     // Generate schedules for each prescription item
-    for (const item of prescription.items) {
-      await scheduleService.generate(item.id, patient_id, start_date, end_date);
+    for (let i = 0; i < prescription.items.length; i++) {
+      const item = prescription.items[i];
+      const scheduleTimes = items[i]?.schedule_times;
+      try {
+        await scheduleService.generate(item.id, patient_id, start_date, end_date, scheduleTimes, items[i]?.frequency);
+      } catch (scheduleError) {
+        console.error(`Failed to generate schedules for item ${item.id}:`, scheduleError);
+        // Don't fail the whole prescription creation, just log the error
+      }
     }
 
     // Include warnings in response if they were overridden
@@ -75,9 +91,7 @@ async function create(req, res) {
   }
 }
 
-/**
- * GET /api/prescriptions/patient/:patientId - Get all prescriptions for a patient
- */
+// GET /api/prescriptions/patient/:patientId
 async function getPatientPrescriptions(req, res) {
   try {
     const { patientId } = req.params;
@@ -89,7 +103,10 @@ async function getPatientPrescriptions(req, res) {
     }
 
     if (patient.family_id !== req.user.family_id) {
-      return res.status(403).json({ error: 'Access denied: patient not in your family' });
+      const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied: patient not in your family' });
+      }
     }
 
     const prescriptions = await prescriptionModel.findByPatient(patientId);
@@ -100,9 +117,7 @@ async function getPatientPrescriptions(req, res) {
   }
 }
 
-/**
- * GET /api/prescriptions/:id - Get single prescription with items
- */
+// GET /api/prescriptions/:id
 async function getById(req, res) {
   try {
     const { id } = req.params;
@@ -115,7 +130,10 @@ async function getById(req, res) {
     // Verify prescription belongs to user's family
     const patient = await patientModel.findById(prescription.patient_id);
     if (patient.family_id !== req.user.family_id) {
-      return res.status(403).json({ error: 'Access denied: prescription not in your family' });
+      const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied: prescription not in your family' });
+      }
     }
 
     res.json(prescription);
@@ -125,9 +143,7 @@ async function getById(req, res) {
   }
 }
 
-/**
- * PUT /api/prescriptions/:id - Update prescription
- */
+// PUT /api/prescriptions/:id
 async function update(req, res) {
   try {
     const { id } = req.params;
@@ -141,7 +157,10 @@ async function update(req, res) {
 
     const patient = await patientModel.findById(existing.patient_id);
     if (patient.family_id !== req.user.family_id) {
-      return res.status(403).json({ error: 'Access denied: prescription not in your family' });
+      const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied: prescription not in your family' });
+      }
     }
 
     const updateData = {};
@@ -156,9 +175,7 @@ async function update(req, res) {
   }
 }
 
-/**
- * PUT /api/prescriptions/:id/cancel - Cancel prescription
- */
+// PUT /api/prescriptions/:id/cancel
 async function cancel(req, res) {
   try {
     const { id } = req.params;
@@ -171,9 +188,14 @@ async function cancel(req, res) {
 
     const patient = await patientModel.findById(existing.patient_id);
     if (patient.family_id !== req.user.family_id) {
-      return res.status(403).json({ error: 'Access denied: prescription not in your family' });
+      const hasAccess = await canAccessFamily(req.user.user_id, req.user.role, req.user.family_id, patient.family_id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied: prescription not in your family' });
+      }
     }
 
+    const itemIds = (existing.prescription_items || []).map(i => i.id);
+    await scheduleModel.deleteByPrescriptionItemIds(itemIds);
     const prescription = await prescriptionModel.cancel(id);
     res.json({ message: 'Prescription cancelled successfully', prescription });
   } catch (error) {

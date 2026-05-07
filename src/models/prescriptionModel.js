@@ -19,6 +19,7 @@ async function create(prescriptionData, items) {
     medication_id: item.medication_id,
     dosage: item.dosage,
     frequency: item.frequency,
+    duration_days: item.duration_days || null,
     instructions: item.instructions
   }));
 
@@ -57,6 +58,7 @@ async function findByPatient(patientId) {
         medication_id,
         dosage,
         frequency,
+        duration_days,
         instructions,
         medications (
           id,

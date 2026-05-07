@@ -1,0 +1,23 @@
+node_modules/
+.env
+.env.*
+CLAUDE.md
+.claude/
+.mcp.json
+
+# Logs
+*.log
+
+# Test scripts (dev-only phase tests)
+test/
+
+# Utility scripts (contains hardcoded credentials)
+scripts/
+
+# Thesis/personal/AI-generated docs
+docs/THESIS_SOURCE.md
+docs/DEFENSE_PREP.md
+docs/PROJECT_MASTER_GUIDE.md
+docs/202153085007Mavinga  Thelma.md
+docs/thesis_notes.txt
+docs/medication-research-sources.md

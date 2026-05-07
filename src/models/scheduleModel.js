@@ -26,11 +26,14 @@ async function getDailySchedule(patientId, date) {
       scheduled_time,
       status,
       prescription_item_id,
-      prescription_items (
+      prescription_items!inner (
         id,
         dosage,
         instructions,
         medication_id,
+        prescriptions!inner (
+          status
+        ),
         medications (
           id,
           generic_name,
@@ -40,6 +43,7 @@ async function getDailySchedule(patientId, date) {
     `)
     .eq('patient_id', patientId)
     .eq('scheduled_date', date)
+    .eq('prescription_items.prescriptions.status', 'active')
     .order('scheduled_time', { ascending: true });
 
   if (error) throw error;
@@ -90,7 +94,7 @@ async function updateStatus(id, status) {
 /**
  * Get schedules for a date range
  */
-async function getScheduleRange(patientId, startDate, endDate) {
+async function getScheduleRange(patientId, startDate, endDate, limit = 100, offset = 0) {
   const { data, error } = await supabase
     .from('medication_schedules')
     .select(`
@@ -111,10 +115,20 @@ async function getScheduleRange(patientId, startDate, endDate) {
     .gte('scheduled_date', startDate)
     .lte('scheduled_date', endDate)
     .order('scheduled_date', { ascending: true })
-    .order('scheduled_time', { ascending: true });
+    .order('scheduled_time', { ascending: true })
+    .range(offset, offset + limit - 1);
 
   if (error) throw error;
   return data;
+}
+
+async function deleteByPrescriptionItemIds(itemIds) {
+  if (!itemIds || itemIds.length === 0) return;
+  const { error } = await supabase
+    .from('medication_schedules')
+    .delete()
+    .in('prescription_item_id', itemIds);
+  if (error) throw error;
 }
 
 module.exports = {
@@ -122,5 +136,6 @@ module.exports = {
   getDailySchedule,
   findById,
   updateStatus,
-  getScheduleRange
+  getScheduleRange,
+  deleteByPrescriptionItemIds
 };

@@ -7,6 +7,16 @@ const { supabase } = require('../config/supabase');
  * @returns {Promise<Array>}
  */
 async function findByPatientId(patientId, familyId) {
+  const { data: patient, error: patientError } = await supabase
+    .from('patients')
+    .select('family_id')
+    .eq('id', patientId)
+    .single();
+
+  if (patientError || !patient || patient.family_id !== familyId) {
+    throw new Error('Unauthorized access to patient notes');
+  }
+
   const { data, error } = await supabase
     .from('caregiver_notes')
     .select(`
@@ -25,21 +35,10 @@ async function findByPatientId(patientId, familyId) {
       )
     `)
     .eq('patient_id', patientId)
-    .order('note_date', { ascending: false });
+    .order('note_date', { ascending: false })
+    .range(0, 99);
 
   if (error) throw error;
-
-  // Verify patient belongs to the family
-  const { data: patient, error: patientError } = await supabase
-    .from('patients')
-    .select('family_id')
-    .eq('id', patientId)
-    .single();
-
-  if (patientError || !patient || patient.family_id !== familyId) {
-    throw new Error('Unauthorized access to patient notes');
-  }
-
   return data;
 }
 

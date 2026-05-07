@@ -6,6 +6,9 @@ const authMiddleware = require('../middleware/auth');
 // All routes require authentication
 router.use(authMiddleware);
 
+// Get adherence stats (must be before '/' to avoid conflict)
+router.get('/adherence', scheduleController.getAdherence);
+
 // Get daily schedule for a patient
 router.get('/', scheduleController.getDailySchedule);
 
