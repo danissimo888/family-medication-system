@@ -1,4 +1,4 @@
-# MedFamily — Family Medication Management System
+# Online Family Chronic Disease Medication Management System Based on Bootstrap
 
 A web platform for families managing chronic conditions like Diabetes and Hypertension. Patients track prescriptions and doses, caregivers monitor adherence remotely, and the system enforces drug interaction and allergy safety checks before every dose.
 
