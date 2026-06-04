@@ -124,4 +124,4 @@ Migrations are in `supabase/migrations/` and must be applied in order.
 
 ## Author
 
-Deniz Ahmed
+danissimo
